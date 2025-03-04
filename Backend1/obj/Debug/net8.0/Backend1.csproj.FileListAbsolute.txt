@@ -137,3 +137,6 @@ C:\projectbackend\backend1\Backend1\obj\Debug\net8.0\refint\Backend1.dll
 C:\projectbackend\backend1\Backend1\obj\Debug\net8.0\Backend1.pdb
 C:\projectbackend\backend1\Backend1\obj\Debug\net8.0\Backend1.genruntimeconfig.cache
 C:\projectbackend\backend1\Backend1\obj\Debug\net8.0\ref\Backend1.dll
+C:\projectbackend\backend1\Backend1\obj\Debug\net8.0\Backend1.sourcelink.json
+C:\projectbackend\backend1\Backend1\bin\Debug\net8.0\BCrypt.Net-Next.dll
+C:\projectbackend\backend1\Backend1\bin\Debug\net8.0\BouncyCastle.Crypto.dll

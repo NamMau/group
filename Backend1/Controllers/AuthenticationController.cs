@@ -3,11 +3,9 @@ using Backend1.Data;
 using Backend1.Dtos.Auth;
 using Backend1.Models;
 using Backend1.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text;
+using BCrypt.Net;
 
 namespace Backend1.Controllers
 {
@@ -27,17 +25,21 @@ namespace Backend1.Controllers
             _config = config;
         }
 
-        //Login for Student, Tutor, or Staff
+        // Login for Student, Tutor, or Staff
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            string role = "";
             int userId = 0;
+            string role = "";
             string email = "";
             string username = "";
             int accountId = 0;
 
+            // Search user in all three tables in one query
             var student = await _context.Students.FirstOrDefaultAsync(s => s.Email == dto.Email);
+            var tutor = await _context.Tutors.FirstOrDefaultAsync(t => t.Email == dto.Email);
+            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.Email == dto.Email);
+
             if (student != null && VerifyPassword(dto.Password, student.Password))
             {
                 role = "Student";
@@ -45,33 +47,29 @@ namespace Backend1.Controllers
                 email = student.Email;
                 username = student.Name;
             }
-
-            var tutor = await _context.Tutors.FirstOrDefaultAsync(t => t.Email == dto.Email);
-            if (tutor != null && VerifyPassword(dto.Password, tutor.Password))
+            else if (tutor != null && VerifyPassword(dto.Password, tutor.Password))
             {
                 role = "Tutor";
                 userId = tutor.TutorID;
                 email = tutor.Email;
                 username = tutor.Name;
             }
-
-            var staff = await _context.Staffs.FirstOrDefaultAsync(s => s.Email == dto.Email);
-            if (staff != null && VerifyPassword(dto.Password, staff.Password))
+            else if (staff != null && VerifyPassword(dto.Password, staff.Password))
             {
                 role = "Staff";
                 userId = staff.StaffID;
                 email = staff.Email;
                 username = staff.Name;
             }
-
-            if (string.IsNullOrEmpty(role))
+            else
             {
                 return Unauthorized(new { Message = "Invalid credentials" });
             }
 
+            // Generate JWT token
             var token = _tokenService.GenerateToken(userId, email, role);
 
-            // Check the accounts in table
+            // Check if account exists in Accounts table
             var existingAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.Email == email);
             if (existingAccount == null)
             {
@@ -79,7 +77,7 @@ namespace Backend1.Controllers
                 {
                     Username = username,
                     Email = email,
-                    Password = HashPassword(dto.Password), // HashPassword
+                    Password = HashPassword(dto.Password), // Secure password hashing
                     StudentID = role == "Student" ? userId : null,
                     TutorID = role == "Tutor" ? userId : null,
                     StaffID = role == "Staff" ? userId : null
@@ -106,18 +104,16 @@ namespace Backend1.Controllers
             });
         }
 
-        // Password Hashing
+        // Secure Password Hashing with BCrypt
         private static string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         // Verify Password
         private static bool VerifyPassword(string inputPassword, string storedHash)
         {
-            return HashPassword(inputPassword) == storedHash;
+            return BCrypt.Net.BCrypt.Verify(inputPassword, storedHash);
         }
     }
 }
