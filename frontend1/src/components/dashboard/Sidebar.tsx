@@ -1,33 +1,43 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog } from "react-icons/fa";
 
-const Sidebar = ({ activeItem }) => {
-  const router = useRouter();
+const menuItems = [
+  { name: "Dashboard", icon: <FaHome />, path: "/dashboard" },
+  { name: "My Course", icon: <FaBook />, path: "/dashboard/mycourse" },
+  { name: "Appointment", icon: <FaCalendarAlt />, path: "/dashboard/appointment" },
+  { name: "Document", icon: <FaFileAlt />, path: "/dashboard/document" },
+  { name: "Message", icon: <FaEnvelope />, path: "/dashboard/message" },
+  { name: "Personal Blog", icon: <FaUser />, path: "/dashboard/blog" },
+  { name: "Setting", icon: <FaCog />, path: "/dashboard/settings" },
+];
 
-  const menuItems = [
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "My Course", path: "/dashboard/mycourse" },
-    { name: "Appointment", path: "/dashboard/appointment" },
-    { name: "Document", path: "/dashboard/document" },
-    { name: "Meeting", path: "/dashboard/meeting" },
-    { name: "Personal Blog", path: "/dashboard/blog" },
-  ];
+const Sidebar = () => {
+  const pathname = usePathname(); // Lấy đường dẫn hiện tại
 
   return (
-    <div className="w-64 bg-gray-200 h-screen p-5">
-      <h2 className="text-2xl font-bold mb-5">eTutoring</h2>
+    <div className="w-64 h-screen bg-gray-100 shadow-md p-5">
+      {/* Logo */}
+      <h1 className="text-2xl font-bold text-orange-600 mb-8">eTutoring</h1>
+
+      {/* Menu Items */}
       <ul>
-        {menuItems.map((item) => (
-          <li
-            key={item.name}
-            className={`p-3 rounded-lg cursor-pointer ${
-              activeItem === item.name ? "bg-orange-300" : "hover:bg-gray-300"
-            }`}
-            onClick={() => router.push(item.path)}
-          >
-            {item.name}
-          </li>
-        ))}
+        {menuItems.map((item) => {
+          const isActive = pathname === item.path; // Kiểm tra đường dẫn chính xác
+
+          return (
+            <li
+              key={item.name}
+              className={`flex items-center p-3 my-2 rounded-md cursor-pointer transition-all ${
+                isActive ? "bg-orange-100 text-orange-600 font-semibold" : "text-gray-700 hover:bg-gray-200"
+              }`}
+              onClick={() => (window.location.href = item.path)} // Điều hướng
+            >
+              <span className="text-lg mr-3">{item.icon}</span>
+              {item.name}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
