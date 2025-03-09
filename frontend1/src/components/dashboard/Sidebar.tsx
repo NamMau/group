@@ -7,7 +7,7 @@ const menuItems = [
   { name: "My Course", icon: <FaBook />, path: "/dashboard/mycourse" },
   { name: "Appointment", icon: <FaCalendarAlt />, path: "/dashboard/appointment" },
   { name: "Document", icon: <FaFileAlt />, path: "/dashboard/document" },
-  { name: "Message", icon: <FaEnvelope />, path: "/dashboard/message" },
+  { name: "Meeting", icon: <FaEnvelope />, path: "/dashboard/meeting" },
   { name: "Personal Blog", icon: <FaUser />, path: "/dashboard/blog" },
   { name: "Setting", icon: <FaCog />, path: "/dashboard/settings" },
 ];
