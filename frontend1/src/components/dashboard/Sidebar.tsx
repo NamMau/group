@@ -1,36 +1,30 @@
 "use client";
-import { useState } from "react";
-import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
-const menuItems = [
-  { name: "Dashboard", icon: <FaHome />, path: "/" },
-  { name: "My Course", icon: <FaBook />, path: "/my-course" },
-  { name: "Appointment", icon: <FaCalendarAlt />, path: "/appointment" },
-  { name: "Document", icon: <FaFileAlt />, path: "/document" },
-  { name: "Message", icon: <FaEnvelope />, path: "/message" },
-  { name: "Personal Blog", icon: <FaUser />, path: "/blog" },
-  { name: "Setting", icon: <FaCog />, path: "/settings" },
-];
+const Sidebar = ({ activeItem }) => {
+  const router = useRouter();
 
-const Sidebar = () => {
-  const [active, setActive] = useState("My Course");
+  const menuItems = [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "My Course", path: "/dashboard/mycourse" },
+    { name: "Appointment", path: "/dashboard/appointment" },
+    { name: "Document", path: "/dashboard/document" },
+    { name: "Meeting", path: "/dashboard/meeting" },
+    { name: "Personal Blog", path: "/dashboard/blog" },
+  ];
 
   return (
-    <div className="w-64 h-screen bg-gray-100 shadow-md p-5">
-      {/* Logo */}
-      <h1 className="text-2xl font-bold text-orange-600 mb-8">eTutoring</h1>
-
-      {/* Menu Items */}
+    <div className="w-64 bg-gray-200 h-screen p-5">
+      <h2 className="text-2xl font-bold mb-5">eTutoring</h2>
       <ul>
         {menuItems.map((item) => (
           <li
             key={item.name}
-            className={`flex items-center p-3 my-2 rounded-md cursor-pointer transition-all ${
-              active === item.name ? "bg-orange-100 text-orange-600" : "text-gray-700 hover:bg-gray-200"
+            className={`p-3 rounded-lg cursor-pointer ${
+              activeItem === item.name ? "bg-orange-300" : "hover:bg-gray-300"
             }`}
-            onClick={() => setActive(item.name)}
+            onClick={() => router.push(item.path)}
           >
-            <span className="text-lg mr-3">{item.icon}</span>
             {item.name}
           </li>
         ))}
