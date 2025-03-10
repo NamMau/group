@@ -9,29 +9,25 @@ const menuItems = [
   { name: "Document", icon: <FaFileAlt />, path: "/studentDashboard/document" },
   { name: "Meeting", icon: <FaEnvelope />, path: "/studentDashboard/meeting" },
   { name: "Personal Blog", icon: <FaUser />, path: "/studentDashboard/blog" },
-  { name: "Setting", icon: <FaCog />, path: "/studentDashboard/settings" },
 ];
 
 const Sidebar = () => {
-  const pathname = usePathname(); // Lấy đường dẫn hiện tại
+  const pathname = usePathname();
 
   return (
-    <div className="w-64 h-screen bg-gray-100 shadow-md p-5">
-      {/* Logo */}
-      <h1 className="text-2xl font-bold text-orange-600 mb-8">eTutoring</h1>
-
+    <div className="w-56 h-screen bg-gray-100 shadow-md flex flex-col justify-between p-5">
       {/* Menu Items */}
-      <ul>
+      <ul className="flex-1">
         {menuItems.map((item) => {
-          const isActive = pathname === item.path; // Kiểm tra đường dẫn chính xác
+          const isActive = pathname === item.path;
 
           return (
             <li
               key={item.name}
-              className={`flex items-center p-3 my-2 rounded-md cursor-pointer transition-all ${
-                isActive ? "bg-orange-100 text-orange-600 font-semibold" : "text-gray-700 hover:bg-gray-200"
-              }`}
-              onClick={() => (window.location.href = item.path)} // Điều hướng
+              className={`flex items-center px-4 py-3 my-1 rounded-md cursor-pointer transition-all ${
+                isActive ? "bg-gray-300 font-semibold" : "text-brown-700 hover:bg-gray-200"
+              } ${item.name === "Dashboard" ? "text-xl font-bold" : ""}`}
+              onClick={() => (window.location.href = item.path)}
             >
               <span className="text-lg mr-3">{item.icon}</span>
               {item.name}
@@ -39,6 +35,17 @@ const Sidebar = () => {
           );
         })}
       </ul>
+
+      {/* Setting */}
+      <div className="border-t pt-4">
+        <div
+          className="flex items-center px-4 py-3 rounded-md cursor-pointer text-brown-700 hover:bg-gray-200"
+          onClick={() => (window.location.href = "/studentDashboard/settings")}
+        >
+          <FaCog className="text-lg mr-3" />
+          Setting
+        </div>
+      </div>
     </div>
   );
 };
