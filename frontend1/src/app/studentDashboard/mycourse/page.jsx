@@ -1,7 +1,7 @@
 "use client";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Navbar from "@/components/dashboard/Navbar";
-import CourseCard from "@/components/dashboard/CourseCard";
+import Sidebar from "@/components/studentDashboard/Sidebar";
+import Navbar from "@/components/studentDashboard/Navbar";
+import CourseCard from "@/components/studentDashboard/mycourse/CourseCardProp";
 
 
 const MyCourse = () => {

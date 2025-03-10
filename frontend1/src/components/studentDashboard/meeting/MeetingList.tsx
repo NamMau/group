@@ -1,5 +1,5 @@
 import React from "react";
-import MeetingItem from "@/components/dashboard/MeetingItem";
+import MeetingItem from "@/components/studentDashboard/meeting/MeetingItem";
 
 const meetings = [
   { chairperson: "Tran Van Truong", course: "Information technology", date: "20/09/2025", time: "12:00 PM" },

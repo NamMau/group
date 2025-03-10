@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import CampusSelect from "@/components/login/CampusSelect";
-import LoginButton from "@/components//login/LoginButton";
+import LoginButton from "@/components/login/LoginButton";
 
 const LoginPage = () => {
   const [campus, setCampus] = useState("");

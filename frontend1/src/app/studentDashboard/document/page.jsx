@@ -1,11 +1,11 @@
 "use client";
 import React from "react";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Header from "@/components/dashboard/Navbar";
-import FileActions from "@/components/dashboard/FileActions";
-import FileTable from "@/components/dashboard/FileTable";
-import UploadButton from "@/components/dashboard/UploadButton";
-import CancelButton from "@/components/dashboard/CancelButton";
+import Sidebar from "@/components/studentDashboard/Sidebar";
+import Header from "@/components/studentDashboard/Navbar";
+import FileActions from "@/components/studentDashboard/document/FileActions";
+import FileTable from "@/components/studentDashboard/document/FileTable";
+import UploadButton from "@/components/studentDashboard/document/UploadButton";
+import CancelButton from "@/components/studentDashboard/document/CancelButton";
 
 const DocumentPage = () => {
   return (

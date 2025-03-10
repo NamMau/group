@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Navbar from "@/components/dashboard/Navbar";
-import MeetingList from "@/components/dashboard/MeetingList";
+import Sidebar from "@/components/studentDashboard/Sidebar";
+import Navbar from "@/components/StudentDashboard/Navbar";
+import MeetingList from "@/components/StudentDashboard/meeting/MeetingList";
 
 const MeetingPage = () => {
   return (

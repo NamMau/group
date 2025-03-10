@@ -1,9 +1,9 @@
 "use client";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Navbar from "@/components/dashboard/Navbar";
-import TimeSpentChart from "@/components/dashboard/TimeSpentChart";
-import ProgressList from "@/components/dashboard/ProgressList";
-import CourseCard from "@/components/dashboard/CourseCard";
+import Sidebar from "@/components/studentDashboard/Sidebar";
+import Navbar from "@/components/studentDashboard/Navbar";
+import TimeSpentChart from "@/components/studentDashboard/TimeSpentChart";
+import ProgressList from "@/components/studentDashboard/ProgressList";
+import CourseCard from "@/components/studentDashboard/CourseCard";
 
 const StudentDashboard = () => {
   return (

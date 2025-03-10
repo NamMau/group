@@ -3,13 +3,13 @@ import { usePathname } from "next/navigation";
 import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog } from "react-icons/fa";
 
 const menuItems = [
-  { name: "Dashboard", icon: <FaHome />, path: "/dashboard" },
-  { name: "My Course", icon: <FaBook />, path: "/dashboard/mycourse" },
-  { name: "Appointment", icon: <FaCalendarAlt />, path: "/dashboard/appointment" },
-  { name: "Document", icon: <FaFileAlt />, path: "/dashboard/document" },
-  { name: "Meeting", icon: <FaEnvelope />, path: "/dashboard/meeting" },
-  { name: "Personal Blog", icon: <FaUser />, path: "/dashboard/blog" },
-  { name: "Setting", icon: <FaCog />, path: "/dashboard/settings" },
+  { name: "Dashboard", icon: <FaHome />, path: "/studentDashboard" },
+  { name: "My Course", icon: <FaBook />, path: "/studentDashboard/mycourse" },
+  { name: "Appointment", icon: <FaCalendarAlt />, path: "/studentDashboard/appointment" },
+  { name: "Document", icon: <FaFileAlt />, path: "/studentDashboard/document" },
+  { name: "Meeting", icon: <FaEnvelope />, path: "/studentDashboard/meeting" },
+  { name: "Personal Blog", icon: <FaUser />, path: "/studentDashboard/blog" },
+  { name: "Setting", icon: <FaCog />, path: "/studentDashboard/settings" },
 ];
 
 const Sidebar = () => {
