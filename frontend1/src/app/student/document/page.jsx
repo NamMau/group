@@ -1,13 +1,9 @@
 "use client";
-import React from "react";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
-import FileActions from "@/components/student/document/FileActions";
-import FileTable from "@/components/student/document/FileTable";
-import UploadButton from "@/components/student/document/UploadButton";
-import CancelButton from "@/components/student/document/CancelButton";
+import CourseGrid from "@/components/student/document/CourseGrid";
 
-const DocumentPage = () => {
+const DashboardLayout = () => {
   return (
     <div className="flex bg-gray-100">
       {/* Sidebar (Cố định bên trái) */}
@@ -25,26 +21,10 @@ const DocumentPage = () => {
         {/* Nội dung chính (Thêm padding-top để tránh bị Navbar che) */}
         <div className="pt-20 p-6 overflow-auto min-h-screen">
           <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-800">File Submissions</h2>
+            <h2 className="text-xl font-bold mb-4">My Course</h2>
 
-            {/* Hành động file */}
-            <div className="mt-3 flex justify-between">
-              <FileActions />
-              <p className="text-sm text-gray-500">
-                Maximum file size: 5MB, maximum number of files: 20
-              </p>
-            </div>
-
-            {/* Danh sách file */}
-            <div className="mt-4">
-              <FileTable />
-            </div>
-
-            {/* Nút hành động */}
-            <div className="flex space-x-2 mt-4">
-              <UploadButton />
-              <CancelButton />
-            </div>
+            {/* Danh sách khóa học */}
+            <CourseGrid />
           </div>
         </div>
       </div>
@@ -52,4 +32,4 @@ const DocumentPage = () => {
   );
 };
 
-export default DocumentPage;
+export default DashboardLayout;
