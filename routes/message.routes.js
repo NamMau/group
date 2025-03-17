@@ -1,0 +1,17 @@
+const express = require('express');
+const router = express.Router();
+const messageController = require('../controllers/message.controller');
+const { auth } = require('../middlewares/auth');
+
+// Apply auth middleware to all routes
+router.use(auth);
+
+// Message management
+router.post('/', messageController.sendMessage);
+router.get('/conversation/:userId', messageController.getConversation);
+router.get('/unread', messageController.getUnreadMessages);
+router.put('/:messageId/read', messageController.markAsRead);
+router.delete('/:messageId', messageController.deleteMessage);
+router.get('/threads', messageController.getMessageThreads);
+
+module.exports = router;
