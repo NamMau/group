@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
-import MeetingHeader from "@/components/StudentDashboard/meeting/MeetingHeader";
-import VideoGrid from "@/components/StudentDashboard/meeting/VideoGrid";
+import MeetingHeader from "@/components/Student/meeting/MeetingHeader";
+import VideoGrid from "@/components/Student/meeting/VideoGrid";
 import MeetingControls from "@/components/Student/meeting/MeetingControls";
 import FloatingChatButton from "@/components/Student/meeting/FloatingChatButton";
 

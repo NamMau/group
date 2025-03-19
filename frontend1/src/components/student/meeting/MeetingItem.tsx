@@ -12,7 +12,7 @@ const MeetingItem: React.FC<MeetingProps> = ({ chairperson, course, date, time }
   const router = useRouter();
 
   const handleJoinMeeting = () => {
-    router.push("/studentDashboard/meeting/new"); // Điều hướng đến file new.jsx
+    router.push("/student/meeting/new"); // Điều hướng đến file new.jsx
   };
 
   return (
