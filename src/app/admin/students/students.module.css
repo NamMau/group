@@ -1,0 +1,185 @@
+.content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .noStudents {
+    text-align: center;
+  }
+  
+  .koalaImage {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  
+  .title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  
+  .description {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .filterButton {
+    padding: 8px 16px;
+    background-color: #fff;
+    color: #3b5998;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .filterButton:hover {
+    background-color: #f5f7fa;
+  }
+  
+  .searchInputWide {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 400px; /* Tăng chiều rộng ô tìm kiếm để khớp với hình 2 */
+    flex-grow: 1; /* Cho phép ô tìm kiếm mở rộng để lấp đầy không gian */
+  }
+  
+  .searchInputWide:focus {
+    border-color: #3b5998;
+    outline: none;
+  }
+  
+  .deleteAllContainer {
+    margin-bottom: 16px;
+  }
+  
+  .deleteAllButton {
+    padding: 8px 16px;
+    background-color: #ff4d4f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .deleteAllButton:hover {
+    background-color: #d9363e;
+  }
+  
+  .tableContainer {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table th,
+  .table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .table th {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+  }
+  
+  .table td {
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .nameCell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  
+  .classButton {
+    padding: 4px 8px;
+    background-color: #e6f0fa;
+    color: #3b5998;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .classButton:hover {
+    background-color: #d1e0f5;
+  }
+  
+  .editButton,
+  .deleteButton {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    margin-right: 8px;
+  }
+  
+  .editButton:hover,
+  .deleteButton:hover {
+    opacity: 0.7;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .pageButtons {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .pageButton,
+  .activePage {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .pageButton {
+    background-color: #f5f7fa;
+    color: #333;
+  }
+  
+  .pageButton:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .activePage {
+    background-color: #3b5998;
+    color: #fff;
+  }
