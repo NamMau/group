@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import AttendanceList from "@/components/tutor/appointment/attendance/AttendanceList";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [showAttendance, setShowAttendance] = useState(false);
 
   return (
     <div className="bg-white shadow-md p-4 rounded-lg w-72 border border-gray-300">
@@ -36,12 +38,22 @@ const Calendar = () => {
         ))}
       </div>
 
-      {/* Nút Check Attendant (Căn trái) */}
+      {/* Nút Check Attendant */}
       <div className="mt-4">
-        <button className="bg-[#D8C3A5] text-[#8B6F47] px-4 py-1 rounded-md text-sm font-medium shadow-sm hover:bg-[#c9b29b]">
-          Check Attendant
+        <button
+          className="bg-[#D8C3A5] text-[#8B6F47] px-4 py-1 rounded-md text-sm font-medium shadow-sm hover:bg-[#c9b29b]"
+          onClick={() => setShowAttendance(!showAttendance)}
+        >
+          {showAttendance ? "Hide Attendance" : "Check Attendant"}
         </button>
       </div>
+
+      {/* Hiển thị AttendanceList khi bấm nút */}
+      {showAttendance && (
+        <div className="mt-4">
+          <AttendanceList />
+        </div>
+      )}
     </div>
   );
 };
