@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import PopupMessage from "./PopupMessage"; // Import component chat popup

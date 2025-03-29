@@ -1,13 +1,16 @@
 "use client";
-import React from "react";
+import { useState } from "react";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
-import FileActions from "@/components/student/document/FileActions";
-import FileTable from "@/components/student/document/FileTable";
-import UploadButton from "@/components/student/document/UploadButton";
-import CancelButton from "@/components/student/document/CancelButton";
+import FileActions from "@/components/student/document/upload/FileActions";
+import FileTable from "@/components/student/document/upload/FileTable";
+import UploadButton from "@/components/student/document/upload/UploadButton";
+import CancelButton from "@/components/student/document/upload/CancelButton";
+import FilePicker from "@/components/student/document/upload/FilePicker"; // Import FilePicker
 
 const DocumentUploadPage = () => {
+  const [isFilePickerOpen, setIsFilePickerOpen] = useState(false);
+
   return (
     <div className="flex bg-[#F1F1F1]">
       {/* Sidebar (Cố định bên trái) */}
@@ -42,12 +45,20 @@ const DocumentUploadPage = () => {
 
             {/* Nút Upload & Cancel */}
             <div className="flex justify-end space-x-3 mt-4">
-              <UploadButton />
+              <button 
+                onClick={() => setIsFilePickerOpen(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              >
+                Upload File
+              </button>
               <CancelButton />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Hiển thị hộp thoại File Picker nếu đang mở */}
+      {isFilePickerOpen && <FilePicker onClose={() => setIsFilePickerOpen(false)} />}
     </div>
   );
 };

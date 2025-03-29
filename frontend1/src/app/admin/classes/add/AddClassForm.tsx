@@ -55,18 +55,6 @@ export default function AddClassForm() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="numberOfStudents">Number of students</label>
-            <input
-              type="number"
-              id="numberOfStudents"
-              name="numberOfStudents"
-              placeholder="Number of students"
-              className={styles.input}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
             <label htmlFor="maximum">Maximum</label>
             <input
               type="number"

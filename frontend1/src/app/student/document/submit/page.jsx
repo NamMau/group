@@ -1,8 +1,8 @@
 "use client";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
-import DocumentStatus from "@/components/student/document/DocumentStatus";
-import SubmitDocumentButton from "@/components/student/document/SubmitButton";
+import DocumentStatus from "@/components/student/document/submit/DocumentStatus";
+import SubmitDocumentButton from "@/components/student/document/submit/SubmitButton";
 
 // Dữ liệu giả lập
 const document = {

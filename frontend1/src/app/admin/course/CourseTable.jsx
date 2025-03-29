@@ -107,7 +107,7 @@ export default function CourseTable() {
                 />
               </th>
               <th>Name</th>
-              <th>Description</th>
+              <th>Last updated</th>
               <th>Operation</th>
             </tr>
           </thead>
