@@ -1,10 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter để chuyển trang
 import Image from "next/image";
 
 const AvatarDropdown = () => {
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter(); // Hook để chuyển hướng trang
 
   // Toggle dropdown
   const toggleDropdown = () => setIsOpen(!isOpen);
@@ -19,6 +21,17 @@ const AvatarDropdown = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
+
+  // Xử lý sự kiện logout
+  const handleLogout = () => {
+    console.log("Đang đăng xuất...");
+    // Xóa dữ liệu user khỏi localStorage hoặc context (nếu có)
+    localStorage.removeItem("userToken"); // Xóa token user (nếu dùng)
+    
+    // Chuyển hướng về trang đăng nhập
+    router.push("/login");
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -72,7 +85,10 @@ const AvatarDropdown = () => {
 
           {/* Log out Button */}
           <div className="border-t pt-3 text-center">
-            <button className="text-orange-700 text-sm font-semibold hover:text-orange-900 transition duration-300">
+            <button
+              onClick={handleLogout} // Thêm sự kiện logout
+              className="text-orange-700 text-sm font-semibold hover:text-orange-900 transition duration-300"
+            >
               Log out
             </button>
           </div>

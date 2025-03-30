@@ -1,9 +1,23 @@
-const CourseCard = ({ title }) => {
-    return (
-      <div className="bg-gradient-to-br from-[#D4A373] to-[#EDE4DA] p-4 rounded-lg shadow-md w-60">
-        <img src="/html5-icon.png" alt="HTML5" className="w-16 h-16" />
-        <h3 className="font-bold text-lg">{title}</h3>
-        <a href="#" className="text-blue-600">View &gt;</a>
-      </div>
-    );
-  };
+import Image from "next/image";
+
+interface CourseCardProps {
+  title: string;
+}
+
+const CourseCard: React.FC<CourseCardProps> = ({ title }) => {
+  return (
+    <div className="bg-[#E8DED1] p-4 rounded-lg shadow-md flex flex-col items-center">
+      <Image
+        src={`/icons/html5.svg`}
+        alt={title}
+        width={64} // 16 * 4 = 64px
+        height={64}
+        className="mb-4"
+      />
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <a href="#" className="text-blue-600 mt-2">View →</a>
+    </div>
+  );
+};
+
+export default CourseCard;

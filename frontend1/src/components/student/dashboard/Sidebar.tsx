@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog } from "react-icons/fa";
 
 const menuItems = [
-  { name: "Dashboard", icon: <FaHome />, path: "/student" },
+  { name: "Dashboard", icon: <FaHome />, path: "/student/dashboard" },
   { name: "My Course", icon: <FaBook />, path: "/student/mycourse" },
   { name: "Appointment", icon: <FaCalendarAlt />, path: "/student/appointment" },
   { name: "Document", icon: <FaFileAlt />, path: "/student/document" },
