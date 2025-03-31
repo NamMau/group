@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog } from "react-icons/fa";
+import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, FaDashcube } from "react-icons/fa";
 
 const menuItems = [
-  { name: "Dashboard", icon: <FaHome />, path: "/student" },
-  { name: "Appointment", icon: <FaCalendarAlt />, path: "/student/appointment" },
-  { name: "Document", icon: <FaFileAlt />, path: "/student/document" },
-  { name: "Meeting", icon: <FaEnvelope />, path: "/student/meeting" },
-  { name: "Personal Blog", icon: <FaUser />, path: "/student/blog" },
+  { name: "Home", icon: <FaHome />, path: "/tutor" },
+  { name: "Dashboard", icon: <FaDashcube />, path: "/tutor/dashboard" },
+  { name: "My Course", icon: <FaBook />, path: "/tutor/feedback" },
+  { name: "Appointment", icon: <FaCalendarAlt />, path: "/tutor/appointment" },
+  { name: "Document", icon: <FaFileAlt />, path: "/tutor/document" },
+  { name: "Meeting", icon: <FaEnvelope />, path: "/tutor/meeting" },
+  { name: "Personal Blog", icon: <FaUser />, path: "/tutor/blog" },
 ];
 
 const Sidebar = () => {
@@ -44,7 +46,7 @@ const Sidebar = () => {
 
       {/* Setting */}
       <div className="border-t pt-4">
-        <Link href="/student/settings">
+        <Link href="/tutor/settings">
           <div className="flex items-center px-4 py-3 rounded-md cursor-pointer text-gray-700 hover:bg-orange-100 transition-all">
             <FaCog className="text-lg mr-3" />
             Setting
