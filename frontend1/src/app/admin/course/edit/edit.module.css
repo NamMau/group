@@ -1,0 +1,121 @@
+.pageWrapper {
+    background-color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .formRow {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 150px;
+  }
+  
+  .formGroup label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .formGroup input,
+  .formGroup textarea {
+    padding: 14px 16px; /* Tăng padding để ô nhập liệu to hơn */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 16px; /* Tăng font-size để chữ lớn hơn */
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .formGroup input:focus,
+  .formGroup textarea:focus {
+    border-color: #3b5998;
+    outline: none;
+  }
+  
+  .formGroup textarea {
+    resize: vertical;
+    min-height: 120px; /* Tăng chiều cao tối thiểu của textarea */
+  }
+  
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 16px;
+  }
+  
+  .addAnother {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #3b5998;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .addAnother:hover {
+    background-color: #f5f7fa;
+  }
+  
+  .plusIcon {
+    font-size: 16px;
+  }
+  
+  .submitButton {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #e0e0e0;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .submitButton:hover {
+    background-color: #d1d1d1;
+  }

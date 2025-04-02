@@ -1,0 +1,134 @@
+/* Đặt nền cho toàn bộ trang */
+body {
+    background-color: #f5f7fa; /* Màu nền xám nhạt */
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+  
+  .addTeacher {
+    padding: 40px 20px; /* Tăng padding trên để có thêm không gian */
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff; /* Nền trắng cho form */
+    border-radius: 8px; /* Bo góc nhẹ */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ */
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem; /* Giảm kích thước chữ */
+    color: #666;
+    margin-bottom: 30px; /* Tăng khoảng cách dưới */
+  }
+  
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Tăng khoảng cách giữa các trường */
+  }
+  
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Tăng khoảng cách giữa label và input */
+  }
+  
+  .formGroup label {
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 500; /* Làm đậm nhãn */
+  }
+  
+  .input {
+    padding: 12px; /* Tăng padding để input cao hơn */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #f9f9f9; /* Nền nhạt cho input */
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: #3b5998;
+    background-color: #fff; /* Nền trắng khi focus */
+  }
+  
+  /* Tùy chỉnh placeholder */
+  .input::placeholder {
+    color: #999; /* Màu placeholder nhạt hơn */
+  }
+  
+  .avatarInput {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .fileInput {
+    display: none;
+  }
+  
+  .selectPhotoButton {
+    padding: 10px 20px;
+    background-color: #e6f0fa;
+    color: #3b5998;
+    border: 1px solid #ddd; /* Thêm viền */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .selectPhotoButton:hover {
+    background-color: #d1e0f5;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px; /* Tăng khoảng cách trên */
+  }
+  
+  .addAnotherButton {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 20px;
+    background-color: transparent; /* Bỏ nền */
+    color: #666;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .addAnotherButton:hover {
+    background-color: #f5f7fa; /* Nền nhạt khi hover */
+  }
+  
+  .plusIcon {
+    font-size: 1.2rem;
+  }
+  
+  .addTeacherButton {
+    padding: 10px 20px;
+    background-color: #3b5998; /* Màu xanh dương đậm */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .addTeacherButton:hover {
+    background-color: #2a4373; /* Màu đậm hơn khi hover */
+  }

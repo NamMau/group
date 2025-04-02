@@ -1,0 +1,2 @@
+npx create-expo-app --template
+npx expo start

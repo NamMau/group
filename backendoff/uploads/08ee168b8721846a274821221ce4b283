@@ -1,0 +1,15 @@
+tôi đang xây dựng app quản lý chi tiêu (personal finance management app). Người dùng tạo tài khoản
+kho vào trang chủ có hiện dashboard, và hiện các phân tích về tổng chi tiêu Bills (expense) qua các chart. Và các loại
+categories cho các categories name khác nhau... và tương ứng với đó là từng budgets cho các categories đó (ví dụ như
+budget cho việc mua xe..). Người dùng cũng có thể ghi khoản nợ vào, ví dụ khoản nợ tên nợ bạn thân, bao nhiêu tiền...
+và người dùng cũng có thể đặt ra các mục tiêu, khi hoàn thành mục tiêu như mua xe, sẽ có thông báo chúc mừng bạn đã mua xe thành công
+... và bạn phải biết tính total qua từng kỳ trong năm...
+
+
+
+npm install uuid
+npm install express-rate-limit
+npm install dotenv
+
+mongodb://localhost:27017/personal-finance-management-app
+
