@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import styles from './login.module.css';
+import { authService } from '../../../services/authService';
 
 export default function StudentLogin() {
   const [email, setEmail] = useState('');
@@ -10,60 +12,90 @@ export default function StudentLogin() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // Sử dụng authService để đăng nhập
+      const data = await authService.login(email, password);
+      console.log('Login response:', data); // Để debug
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      // Kiểm tra role
+      if (data.user?.role !== 'student') {
+        authService.removeToken(); // Xóa cả accessToken và refreshToken nếu không phải student
+        throw new Error('Access denied. This login is for students only.');
       }
-
-      // Lưu token vào localStorage
-      localStorage.setItem('token', data.token);
 
       // Chuyển hướng đến trang dashboard của sinh viên
       router.push('/student/dashboard');
     } catch (error) {
-      setError(error.message);
+      console.error('Login error:', error);
+      // Xóa cả accessToken và refreshToken khi có lỗi
+      authService.removeToken();
+      
+      if (error.message.includes('401')) {
+        setError('Invalid email or password');
+      } else if (error.message.includes('Access denied')) {
+        setError('This login is for students only');
+      } else {
+        setError(error.message || 'Login failed. Please try again.');
+      }
     }
   };
 
   return (
     <div className={styles.loginContainer}>
-      <h1 className={styles.title}>Welcome, Student</h1>
-      <div className={styles.loginBox}>
-        <p className={styles.welcomeMessage}>Please log in to continue</p>
-        {error && <p className={styles.errorMessage}>{error}</p>}
-        <input
-          type="text"
-          placeholder="Enter your email"
-          className={styles.inputField}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Enter Password"
-          className={styles.inputField}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button className={styles.loginButton} onClick={handleLogin}>
-          Login
-        </button>
+      <div className={styles.loginCard}>
+        <h1 className={styles.title}>Student Login</h1>
+        
+        {error && <div className={styles.error}>{error}</div>}
+        
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="email" className={styles.label}>Email</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              className={styles.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.label}>Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              className={styles.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className={styles.forgotPassword}>
+            <Link href="/student/forgot-password">Forgot password?</Link>
+          </div>
+
+          <button type="submit" className={styles.loginButton}>
+            Login
+          </button>
+        </form>
+
+        <div className={styles.registerLink}>
+          Don't have an account?
+          <Link href="/student/register">Register here</Link>
+        </div>
       </div>
     </div>
   );

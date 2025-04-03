@@ -31,7 +31,7 @@ export interface Document {
 export const documentService = {
   // Get document by ID
   getDocumentById: async (documentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/documents/get-document/${documentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -40,7 +40,7 @@ export const documentService = {
 
   // Get student's documents for a course
   getStudentDocuments: async (courseId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/documents/get-documents`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -49,7 +49,7 @@ export const documentService = {
 
   // Upload new document
   uploadDocument: async (formData: FormData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(`${API_URL}/documents/upload`, formData, {
       headers: { 
         Authorization: `Bearer ${token}`,
@@ -71,7 +71,7 @@ export const documentService = {
 
   // Delete document
   deleteDocument: async (documentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.delete(`${API_URL}/documents/delete/${documentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });

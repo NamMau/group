@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './edit.module.css';
+import { userService } from '../../../../services/userService';
+import { authService } from '../../../../services/authService';
 
 export default function EditStudent() {
   const router = useRouter();
@@ -14,38 +16,47 @@ export default function EditStudent() {
     email: '',
     phoneNumber: '',
     password: '',
+    department: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (studentId) {
-      fetch(`http://localhost:5000/api/v1/user/${studentId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data) {
-            setStudent(data);
-          } else {
-            alert('Student not found!');
-            router.push('/admin/students');
-          }
-        })
-        .catch(() => {
-          alert('Error fetching student data');
-          router.push('/admin/students');
+    const fetchStudent = async () => {
+      if (!studentId) return;
+
+      try {
+        const token = authService.getToken();
+        if (!token) {
+          router.push('/admin/login');
+          return;
+        }
+
+        const data = await userService.getStudent(studentId, token);
+        setStudent({
+          fullName: data.fullName || '',
+          email: data.email || '',
+          phoneNumber: data.phoneNumber || '',
+          password: '',
+          department: data.department || '',
         });
-    }
+      } catch (err) {
+        setError(err.message || 'Error fetching student data');
+        if (err.message === 'Unauthorized access') {
+          authService.removeToken();
+          router.push('/admin/login');
+        } else {
+          setTimeout(() => router.push('/admin/students'), 2000);
+        }
+      }
+    };
+
+    fetchStudent();
   }, [studentId, router]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setStudent((prev) => ({ ...prev, [name]: value }));
+    setStudent((prev) => ({ ...prev, [name]: value || '' }));
   };
 
   const handleFileChange = (e) => {
@@ -65,23 +76,26 @@ export default function EditStudent() {
     setSuccess('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/users/update-user/${studentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(student),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to update student');
+      const token = authService.getToken();
+      if (!token) {
+        router.push('/admin/login');
+        return;
       }
+
+      const studentData = {
+        ...student,
+        password: student.password || undefined
+      };
+
+      await userService.updateStudent(studentId, studentData, token);
       setSuccess('Student updated successfully!');
-      router.push('/admin/students');
+      setTimeout(() => router.push('/admin/students'), 1000);
     } catch (err) {
       setError(err.message);
+      if (err.message === 'Unauthorized access') {
+        authService.removeToken();
+        router.push('/admin/login');
+      }
     }
   };
 
@@ -112,7 +126,7 @@ export default function EditStudent() {
                 name="password"
                 value={student.password}
                 onChange={handleInputChange}
-                required = {false}
+                placeholder="Leave empty to keep current password"
               />
             </div>
           </div>
@@ -137,6 +151,25 @@ export default function EditStudent() {
                 value={student.phoneNumber}
                 onChange={handleInputChange}
               />
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label htmlFor="department">Department</label>
+              <select
+                id="department"
+                name="department"
+                value={student.department}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select a department</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                <option value="Data Science">Data Science</option>
+              </select>
             </div>
           </div>
           <div className={styles.actions}>

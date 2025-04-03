@@ -1,13 +1,16 @@
+'use client';
+
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { FaSearch } from "react-icons/fa";
+import { authService } from '../../../services/authService';
 
 interface SearchBarProps {
   onSearch: (courses: any[]) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+export default function SearchBar({ onSearch }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -18,23 +21,28 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push('/tutor/login');
+      
+      if (!authService.isAuthenticated()) {
+        router.push('/login');
         return;
       }
 
       const response = await axios.get(
         `http://localhost:5000/api/v1/courses/getcoursebyname/${encodeURIComponent(searchQuery.trim())}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: authService.getAuthHeaders()
         }
       );
 
-      onSearch(response.data.data);
-    } catch (err) {
-      console.error("Error searching courses:", err);
-      onSearch([]);
+      onSearch(response.data.data || []);
+    } catch (error: any) {
+      console.error('Error searching courses:', error);
+      if (error.response?.status === 401) {
+        authService.removeToken();
+        router.push('/login');
+      } else {
+        alert(error.response?.data?.message || 'Failed to search courses');
+      }
     } finally {
       setLoading(false);
     }
@@ -47,22 +55,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
         placeholder="Search courses..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-        disabled={loading}
+        className="w-full px-4 py-2 pl-10 pr-4 text-gray-900 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <button
         type="submit"
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-orange-500 transition-colors"
         disabled={loading}
+        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
       >
         {loading ? (
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         ) : (
-          <FaSearch className="text-lg" />
+          <FaSearch className="w-5 h-5" />
         )}
       </button>
     </form>
   );
-};
-
-export default SearchBar;
+}

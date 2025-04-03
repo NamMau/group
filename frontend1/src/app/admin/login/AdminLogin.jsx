@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
+import { authService } from '../../../services/authService';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -17,28 +19,18 @@ export default function AdminLogin() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // Lưu token vào localStorage
-      localStorage.setItem('token', data.token);
+      setError('');
+      setLoading(true);
+      
+      // Sử dụng authService để login
+      await authService.login(email, password);
 
       // Chuyển hướng đến trang dashboard
-      router.push('/dashboard');
+      router.push('/admin/dashboard');
     } catch (error) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,8 +54,12 @@ export default function AdminLogin() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button className={styles.loginButton} onClick={handleLogin}>
-          Login
+        <button 
+          className={`${styles.loginButton} ${loading ? styles.loading : ''}`} 
+          onClick={handleLogin}
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </div>
     </div>

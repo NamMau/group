@@ -20,12 +20,18 @@
     padding: 20px;
     border-radius: 10px;
     text-align: center;
+    transition: transform 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
   }
   
   .cardNumber {
     font-size: 2rem;
     color: #333;
     margin-bottom: 10px;
+    font-weight: bold;
   }
   
   .cardLabel {
@@ -40,10 +46,13 @@
     color: #3b5998;
     cursor: pointer;
     font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
   }
   
   .cardButton:hover {
-    text-decoration: underline;
+    background-color: rgba(59, 89, 152, 0.1);
   }
   
   .addBlocks {
@@ -59,6 +68,13 @@
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .addBlock:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   
   .addIcon {
@@ -70,9 +86,32 @@
     font-size: 1.2rem;
     color: #333;
     margin-bottom: 5px;
+    font-weight: 500;
   }
   
   .addDescription {
     font-size: 0.9rem;
     color: #666;
+  }
+  
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  .error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    font-size: 1.2rem;
+    color: #dc3545;
+    background-color: #ffebee;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px;
   }

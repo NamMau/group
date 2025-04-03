@@ -2,110 +2,130 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api/v1';
 
-export interface Attachment {
-  fileName: string;
-  fileUrl: string;
-  fileType: string;
-}
-
-export interface RelatedTo {
-  type: 'course' | 'meeting' | 'document' | 'blog';
-  id: string;
-}
-
 export interface Message {
   _id: string;
   sender: {
     _id: string;
     fullName: string;
-    avatar?: string;
+    email: string;
   };
   recipient: {
     _id: string;
     fullName: string;
-    avatar?: string;
+    email: string;
   };
   content: string;
   isRead: boolean;
-  attachments?: Attachment[];
-  relatedTo?: RelatedTo;
   createdAt: string;
-  updatedAt: string;
+  attachments?: Array<{
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+  }>;
+  relatedTo?: {
+    type: 'course' | 'meeting' | 'document' | 'blog';
+    id: string;
+  };
 }
 
 export interface MessageThread {
-  _id: string;
   user: {
     _id: string;
     fullName: string;
+    email: string;
     avatar?: string;
   };
-  lastMessage: {
-    content: string;
-    createdAt: string;
-    attachments?: Attachment[];
-    relatedTo?: RelatedTo;
-  };
+  lastMessage: Message;
   unreadCount: number;
 }
 
-export const messageService = {
-  // Get all message threads (conversations)
-  getMessageThreads: async () => {
-    const token = localStorage.getItem('token');
+export const chatService = {
+  // Get all message threads
+  getMessageThreads: async (): Promise<MessageThread[]> => {
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/messages/threads`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return response.data.data;
+    return response.data;
   },
 
   // Get conversation with a specific user
-  getConversation: async (userId: string) => {
-    const token = localStorage.getItem('token');
+  getConversation: async (userId: string): Promise<Message[]> => {
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/messages/conversation/${userId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return response.data.data;
+    return response.data;
   },
 
   // Send a message
-  sendMessage: async (userId: string, content: string, attachments?: Attachment[], relatedTo?: RelatedTo) => {
-    const token = localStorage.getItem('token');
+  sendMessage: async (recipientId: string, content: string): Promise<Message> => {
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(
-      `${API_URL}/messages/send-message/${userId}`,
-      { content, attachments, relatedTo },
+      `${API_URL}/messages/send-message/${recipientId}`,
+      { content },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    return response.data.data;
+    return response.data;
+  },
+
+  // Get unread messages
+  getUnreadMessages: async (): Promise<Message[]> => {
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.get(`${API_URL}/messages/get-unread`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
   },
 
   // Mark message as read
-  markAsRead: async (messageId: string) => {
-    const token = localStorage.getItem('token');
+  markAsRead: async (messageId: string): Promise<Message> => {
+    const token = localStorage.getItem('accessToken');
     const response = await axios.put(
       `${API_URL}/messages/markasread/${messageId}/read`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    return response.data.data;
+    return response.data;
   },
 
-  // Delete a message
-  deleteMessage: async (messageId: string) => {
-    const token = localStorage.getItem('token');
-    const response = await axios.delete(
-      `${API_URL}/messages/delete/${messageId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data.data;
-  },
-
-  // Get unread messages count
-  getUnreadMessages: async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/messages/get-unread`, {
+  // Delete message
+  deleteMessage: async (messageId: string): Promise<void> => {
+    const token = localStorage.getItem('accessToken');
+    await axios.delete(`${API_URL}/messages/delete/${messageId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return response.data.data;
+  },
+
+  // Get message statistics for chart
+  getMessageStats: async () => {
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.get(`${API_URL}/messages/threads`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const threads = response.data;
+    const messagesByDate = threads.reduce((acc: any, thread: MessageThread) => {
+      const message = thread.lastMessage;
+      const date = new Date(message.createdAt).toLocaleDateString('en-US', { weekday: 'short' });
+      
+      if (!acc[date]) {
+        acc[date] = { sent: 0, received: 0 };
+      }
+      
+      if (message.sender._id === localStorage.getItem('userId')) {
+        acc[date].sent++;
+      } else {
+        acc[date].received++;
+      }
+      
+      return acc;
+    }, {});
+
+    return Object.entries(messagesByDate).map(([date, stats]: [string, any]) => ({
+      date,
+      sent: stats.sent,
+      received: stats.received
+    }));
   }
 }; 

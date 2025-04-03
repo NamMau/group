@@ -1,3 +1,5 @@
+"use client";
+
 // src/context/SocketContext.tsx
 import React, { createContext, useContext, useEffect, useState, PropsWithChildren } from 'react';
 import { io, Socket } from 'socket.io-client';

@@ -5,13 +5,12 @@ import { usePathname } from "next/navigation";
 import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, FaDashcube } from "react-icons/fa";
 
 const menuItems = [
-  { name: "Home", icon: <FaHome />, path: "/tutor" },
   { name: "Dashboard", icon: <FaDashcube />, path: "/tutor/dashboard" },
-  { name: "My Course", icon: <FaBook />, path: "/tutor/feedback" },
-  { name: "Appointment", icon: <FaCalendarAlt />, path: "/tutor/appointment" },
-  { name: "Document", icon: <FaFileAlt />, path: "/tutor/document" },
-  { name: "Meeting", icon: <FaEnvelope />, path: "/tutor/meeting" },
-  { name: "Personal Blog", icon: <FaUser />, path: "/tutor/blog" },
+  { name: "My Courses", icon: <FaBook />, path: "/tutor/courses" },
+  { name: "Appointments", icon: <FaCalendarAlt />, path: "/tutor/appointments" },
+  { name: "Documents", icon: <FaFileAlt />, path: "/tutor/documents" },
+  { name: "Messages", icon: <FaEnvelope />, path: "/tutor/messages" },
+  { name: "Blog", icon: <FaUser />, path: "/tutor/blog" },
 ];
 
 const Sidebar = () => {
@@ -49,7 +48,7 @@ const Sidebar = () => {
         <Link href="/tutor/settings">
           <div className="flex items-center px-4 py-3 rounded-md cursor-pointer text-gray-700 hover:bg-orange-100 transition-all">
             <FaCog className="text-lg mr-3" />
-            Setting
+            Settings
           </div>
         </Link>
       </div>

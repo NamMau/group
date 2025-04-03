@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaTimes, FaPaperclip, FaPaperPlane } from "react-icons/fa";
-import { messageService, Message } from "../../../services/chatService";
+import { chatService, Message } from "../../../services/chatService";
 import Image from "next/image";
 
 interface PopupMessageProps {
@@ -14,108 +14,111 @@ interface PopupMessageProps {
   };
 }
 
-const PopupMessage: React.FC<PopupMessageProps> = ({ isOpen, onClose, user }) => {
+const PopupMessage = ({ isOpen, onClose, user }: PopupMessageProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch messages when chat is opened
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!isOpen) return;
-      
       try {
-        setIsLoading(true);
-        setError(null);
-        const conversation = await messageService.getConversation(user.id);
-        setMessages(conversation);
+        const data = await chatService.getConversation(user.id);
+        setMessages(data);
       } catch (err) {
-        setError("Failed to load messages");
-        console.error("Error fetching messages:", err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch messages');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchMessages();
+    if (isOpen) {
+      fetchMessages();
+    }
   }, [isOpen, user.id]);
 
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
-
-    try {
-      const newMessage = await messageService.sendMessage(user.id, inputText.trim());
-      setMessages(prev => [...prev, newMessage]);
-      setInputText("");
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setError("Failed to send message");
-    }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const message = await chatService.sendMessage(user.id, newMessage);
+      setMessages(prev => [...prev, message]);
+      setNewMessage("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 w-80 bg-white shadow-xl rounded-lg overflow-hidden">
+    <div className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl z-50">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-300 to-orange-100">
+      <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-3">
-          <div className="relative w-10 h-10">
+          <div className="relative">
             <Image
-              src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+              src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`}
               alt={user.name}
-              fill
-              className="rounded-full object-cover"
+              width={40}
+              height={40}
+              className="rounded-full"
             />
+            {user.isOnline && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+            )}
           </div>
           <div>
-            <p className="text-orange-700 font-semibold">{user.name}</p>
+            <h3 className="font-semibold">{user.name}</h3>
             <p className="text-sm text-gray-500">
-              {user.isOnline ? <span className="text-green-500">● Active</span> : "Offline"}
+              {user.isOnline ? "Online" : "Offline"}
             </p>
           </div>
         </div>
-        <FaTimes className="text-gray-600 cursor-pointer hover:text-red-500" onClick={onClose} />
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <FaTimes />
+        </button>
       </div>
 
       {/* Messages */}
-      <div className="p-3 space-y-2 h-60 overflow-y-auto bg-gray-50">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-          </div>
+      <div className="h-96 overflow-y-auto p-4">
+        {loading ? (
+          <div className="text-center">Loading messages...</div>
         ) : error ? (
-          <div className="text-center text-red-500 py-4">{error}</div>
+          <div className="text-center text-red-500">{error}</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-4">No messages yet</div>
+          <div className="text-center text-gray-500">No messages yet</div>
         ) : (
-          messages.map((msg) => (
+          messages.map((message) => (
             <div
-              key={msg._id}
-              className={`flex ${msg.sender._id === user.id ? "justify-start" : "justify-end"}`}
+              key={message._id}
+              className={`mb-4 ${
+                message.sender._id === user.id ? "text-right" : "text-left"
+              }`}
             >
-              <div className="flex flex-col max-w-[80%]">
-                <p
-                  className={`px-3 py-1 rounded-lg ${
-                    msg.sender._id === user.id ? "bg-orange-200" : "bg-gray-300"
-                  } text-gray-800`}
-                >
-                  {msg.content}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatTime(msg.createdAt)}
+              <div
+                className={`inline-block p-3 rounded-lg ${
+                  message.sender._id === user.id
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                <p>{message.content}</p>
+                <p className="text-xs mt-1 opacity-75">
+                  {new Date(message.createdAt).toLocaleTimeString()}
                 </p>
               </div>
             </div>
@@ -125,27 +128,29 @@ const PopupMessage: React.FC<PopupMessageProps> = ({ isOpen, onClose, user }) =>
       </div>
 
       {/* Input */}
-      <div className="flex items-center p-2 border-t bg-white">
-        <button className="p-2 text-gray-500 hover:text-orange-500">
-          <FaPaperclip />
-        </button>
-        <input
-          type="text"
-          placeholder="Type a message..."
-          className="flex-1 p-2 outline-none bg-gray-100 rounded-full mx-2"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-          disabled={isLoading}
-        />
-        <button 
-          className="p-2 text-orange-500 hover:text-orange-700 disabled:opacity-50" 
-          onClick={handleSendMessage}
-          disabled={isLoading || !inputText.trim()}
-        >
-          <FaPaperPlane />
-        </button>
-      </div>
+      <form onSubmit={handleSendMessage} className="p-4 border-t">
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <FaPaperclip />
+          </button>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="text-blue-500 hover:text-blue-700"
+          >
+            <FaPaperPlane />
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

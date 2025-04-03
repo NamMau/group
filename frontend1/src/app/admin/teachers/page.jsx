@@ -1,93 +1,74 @@
-// 'use client';
-
-// import { useState } from 'react';
-// import styles from './teachers.module.css';
-// import TeachersTable from './TeachersTable';
-// import './metadata'; // Import để đảm bảo file metadata.jsx được tải, nhưng không export lại
-
-// export default function Teachers() {
-//   const [searchTerm, setSearchTerm] = useState('');
-
-//   return (
-//     <div className={styles.teachers}>
-//       {/* Thanh tìm kiếm và bộ lọc */}
-//       <div className={styles.header}>
-//         <div className={styles.searchBar}>
-//           <div className={styles.filter}>
-//             <select className={styles.filterSelect}>
-//               <option>Add filter</option>
-//             </select>
-//           </div>
-//           <input
-//             type="text"
-//             placeholder="Search for a teacher by name or email"
-//             className={styles.searchInput}
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//           />
-//         </div>
-//       </div>
-
-//       {/* Bảng danh sách giáo viên */}
-//       <TeachersTable searchTerm={searchTerm} />
-//     </div>
-//   );
-// }
-
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './teachers.module.css';
-import TeachersTable from './TeachersTable'; // Assuming you have this component
-import './metadata'; // To ensure metadata.jsx is loaded, but not exported again
+import TeachersTable from './TeachersTable';
+import { authService, API_URL } from '../../../services/authService';
+import './metadata';
 
 export default function Teachers() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch tutors from the backend
   useEffect(() => {
-    const fetchTutors = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/users/get-tutors', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+      console.log('Not authenticated, redirecting to admin login');
+      router.push('/admin/login');
+      return;
+    }
 
-        if (response.ok) {
-          const data = await response.json();
-          setTutors(data); // Assuming the response is a list of tutors
-        } else {
-          alert('Failed to fetch tutors');
-        }
-      } catch (error) {
-        console.error('Error fetching tutors:', error);
-        alert('Error fetching tutors');
-      }
-      setLoading(false);
-    };
-
+    console.log('Authenticated, fetching tutors');
     fetchTutors();
-  }, []);
+  }, [router]);
 
-  // Filter tutors based on the search term
-  const filteredTutors = tutors.filter((tutor) =>
-    tutor.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tutor.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchTutors = async () => {
+    try {
+      setError(null);
+      console.log('Making API request to:', `${API_URL}/users/get-tutors`);
+      console.log('With headers:', authService.getAuthHeaders());
+      
+      const response = await fetch(`${API_URL}/users/get-tutors`, {
+        headers: authService.getAuthHeaders(),
+        cache: 'no-store' // Disable caching
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired or invalid
+          console.log('Token invalid, removing and redirecting');
+          authService.removeToken();
+          router.push('/admin/login');
+          return;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch tutors');
+      }
+
+      const data = await response.json();
+      console.log('Fetched tutors:', data);
+      setTutors(data);
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={styles.teachers}>
-      {/* Search and filter bar */}
       <div className={styles.header}>
         <div className={styles.searchBar}>
           <div className={styles.filter}>
             <select className={styles.filterSelect}>
-              <option value="">Add filter</option>
-              {/* You can add more filter options here */}
+              <option>Add filter</option>
             </select>
           </div>
           <input
@@ -100,8 +81,13 @@ export default function Teachers() {
         </div>
       </div>
 
-      {/* Tutors table */}
-      <TeachersTable tutors={filteredTutors} loading={loading} />
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className={styles.error}>{error}</div>
+      ) : (
+        <TeachersTable tutors={tutors} searchTerm={searchTerm} />
+      )}
     </div>
   );
 }

@@ -39,6 +39,10 @@ const userSchema = new Schema(
     department: String,
     studentId: String,
     phoneNumber: String,
+    avatar: {
+      type: String,
+      default: 'https://via.placeholder.com/150'
+    },
     lastLogin: Date,
     loginHistory: [{
       date: Date,

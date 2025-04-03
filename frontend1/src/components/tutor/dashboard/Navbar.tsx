@@ -1,7 +1,7 @@
 import { FaSearch } from "react-icons/fa";
-import AvatarDropdown from "@/components/student/dashboard/AvatarDropdown";
-import NotificationDropdown from "@/components/student/dashboard/NotificationDropdown";
-import InboxDropdown from "@/components/student/dashboard/InboxDropdown";
+import AvatarDropdown from "@/components/tutor/dashboard/AvatarDropdown";
+import NotificationDropdown from "@/components/tutor/dashboard/NotificationDropdown";
+import InboxDropdown from "@/components/tutor/dashboard/InboxDropdown";
 
 const Navbar = () => {
   return (

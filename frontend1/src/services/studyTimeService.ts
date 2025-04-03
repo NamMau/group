@@ -10,7 +10,7 @@ export interface StudyTimeData {
 export const studyTimeService = {
   // Get student's study time statistics
   getStudyTime: async (studentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/users/${studentId}/study-time`, {
       headers: { Authorization: `Bearer ${token}` }
     });

@@ -1,32 +1,64 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './classes.module.css';
+import { authService, API_URL } from '../../../services/authService';
 
 export default function ClassesTable() {
   const [classes, setClasses] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
   const classesPerPage = 2;
   
   // Lấy danh sách lớp học từ API
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/v1/classes/get-all-classes', {
+        setLoading(true);
+        setError(null);
+
+        if (!authService.isAuthenticated()) {
+          console.log('Not authenticated, redirecting to login');
+          router.push('/admin/login');
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/classes/get-all-classes`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: authService.getAuthHeaders(),
+          cache: 'no-store'
         });
+
+        console.log('Response status:', response.status);
         const data = await response.json();
-        setClasses(data);
+        console.log('Response data:', data);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('Unauthorized, removing token and redirecting');
+            authService.removeToken();
+            router.push('/admin/login');
+            return;
+          }
+          throw new Error(data.message || 'Failed to fetch classes');
+        }
+
+        // Ensure we're setting an array
+        setClasses(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching classes:', error);
+        setError(error.message || 'Failed to fetch classes');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchClasses();
-  }, []);
+  }, [router]);
 
   const totalPages = Math.ceil(classes.length / classesPerPage);
   const startIndex = (currentPage - 1) * classesPerPage;
@@ -50,39 +82,62 @@ export default function ClassesTable() {
 
   const handleDeleteClass = async (classId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/classes/delete-class/${classId}`, {
+      if (!authService.isAuthenticated()) {
+        router.push('/admin/login');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/classes/delete-class/${classId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: authService.getAuthHeaders(),
       });
 
-      if (response.ok) {
-        setClasses(classes.filter((classItem) => classItem._id !== classId));
-      } else {
-        console.error('Failed to delete class');
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          router.push('/admin/login');
+          return;
+        }
+        throw new Error(data.message || 'Failed to delete class');
       }
+
+      setClasses(classes.filter((classItem) => classItem._id !== classId));
     } catch (error) {
       console.error('Error deleting class:', error);
+      alert(error.message || 'Failed to delete class');
     }
   };
 
   const handleDeleteAll = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/v1/classes/delete-all-classes', {
+      if (!authService.isAuthenticated()) {
+        router.push('/admin/login');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/classes/delete-all-classes`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        headers: authService.getAuthHeaders(),
       });
 
-      if (response.ok) {
-        setClasses([]);
-        setSelectedClasses([]);
-      } else {
-        console.error('Failed to delete all classes');
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          router.push('/admin/login');
+          return;
+        }
+        throw new Error(data.message || 'Failed to delete all classes');
       }
+
+      setClasses([]);
+      setSelectedClasses([]);
     } catch (error) {
       console.error('Error deleting all classes:', error);
+      alert(error.message || 'Failed to delete all classes');
     }
   };
 
@@ -90,6 +145,14 @@ export default function ClassesTable() {
     setCurrentPage(page);
     setSelectedClasses([]);
   };
+
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className={styles.error}>{error}</div>;
+  }
 
   if (classes.length === 0) {
     return (

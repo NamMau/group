@@ -20,7 +20,7 @@ export interface Notification {
 export const notificationService = {
   // Get all notifications
   getNotifications: async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/notifications`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -29,7 +29,7 @@ export const notificationService = {
 
   // Get unread notifications count
   getUnreadCount: async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/notifications/unread-count`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -38,7 +38,7 @@ export const notificationService = {
 
   // Mark notification as read
   markAsRead: async (notificationId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.put(
       `${API_URL}/notifications/${notificationId}/read`,
       {},
@@ -49,7 +49,7 @@ export const notificationService = {
 
   // Mark all notifications as read
   markAllAsRead: async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.put(
       `${API_URL}/notifications/mark-all-read`,
       {},
@@ -60,7 +60,7 @@ export const notificationService = {
 
   // Delete notification
   deleteNotification: async (notificationId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.delete(
       `${API_URL}/notifications/${notificationId}`,
       { headers: { Authorization: `Bearer ${token}` } }

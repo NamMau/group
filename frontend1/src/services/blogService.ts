@@ -59,7 +59,7 @@ interface UpdateBlogData extends Partial<CreateBlogData> {}
 export const blogService = {
   // Get all posts for a student
   getStudentBlogs: async (studentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/get-blogstudent/${studentId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -68,7 +68,7 @@ export const blogService = {
 
   // Get blog by ID
   getBlogById: async (id: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/get-blog/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -77,7 +77,7 @@ export const blogService = {
 
   // Create new post
   createPost: async (data: CreateBlogData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(`${API_URL}/blogs/create-blog`, data, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -86,7 +86,7 @@ export const blogService = {
 
   // Update post
   updatePost: async (id: string, data: UpdateBlogData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.put(`${API_URL}/blogs/update-blog/${id}`, data, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -95,7 +95,7 @@ export const blogService = {
 
   // Like/Unlike post
   toggleLike: async (postId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(
       `${API_URL}/blogs/like-blog/${postId}/like`,
       {},
@@ -106,7 +106,7 @@ export const blogService = {
 
   // Add comment
   addComment: async (postId: string, content: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(
       `${API_URL}/blogs/add-comment/${postId}/comments`,
       { content },
@@ -117,7 +117,7 @@ export const blogService = {
 
   // Like/Unlike comment
   toggleCommentLike: async (postId: string, commentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(
       `${API_URL}/blogs/like-comment/${postId}/comments/${commentId}/like`,
       {},
@@ -128,7 +128,7 @@ export const blogService = {
 
   // Delete comment
   deleteComment: async (postId: string, commentId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.delete(
       `${API_URL}/blogs/delete-comment/${postId}/comments/${commentId}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -138,7 +138,7 @@ export const blogService = {
 
   // Delete post
   deletePost: async (postId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.delete(`${API_URL}/blogs/delete-blog/${postId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -147,7 +147,7 @@ export const blogService = {
 
   // Search blogs
   searchBlogs: async (query: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/search`, {
       params: { q: query },
       headers: { Authorization: `Bearer ${token}` }
@@ -157,7 +157,7 @@ export const blogService = {
 
   // Get blogs by course
   getCourseBlogs: async (courseId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/course-blogs/${courseId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -166,7 +166,7 @@ export const blogService = {
 
   // Get blogs by class
   getClassBlogs: async (classId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/class-blogs/${classId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -175,7 +175,7 @@ export const blogService = {
 
   // Get blogs by tag
   getBlogsByTag: async (tag: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.get(`${API_URL}/blogs/tag-blogs/${tag}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -184,7 +184,7 @@ export const blogService = {
 
   // Increment view count
   incrementViews: async (postId: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const response = await axios.post(
       `${API_URL}/blogs/increment-views/${postId}`,
       {},

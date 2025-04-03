@@ -23,7 +23,7 @@ class UserService {
     
     async getAllTutors() {
         try {
-          const tutors = await User.find({ role: 'tutor' }).select('_id fullName email');
+          const tutors = await User.find({ role: 'tutor' }).select('_id fullName email department');
           return tutors;
         } catch (error) {
           throw new Error('Error fetching tutors: ' + error.message);
@@ -32,7 +32,8 @@ class UserService {
 
     async getAllStudents() {
         try {
-            const students = await User.find({role: 'student'}).select('_id fullName email');
+            const students = await User.find({role: 'student'})
+                .select('_id fullName email department phoneNumber avatar');
             return students;
         } catch (error) {
             throw new Error('Error fetching students: ' + error.message);

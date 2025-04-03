@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import styles from './add.module.css';
+import { authService, API_URL } from '../../../../services/authService';
 
 export default function AddTeacherForm() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function AddTeacherForm() {
     // avatar: null,
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,47 +31,51 @@ export default function AddTeacherForm() {
   const handleAddTeacher = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Unauthorized. Please log in.');
+    if (!authService.isAuthenticated()) {
+      setError('Unauthorized. Please log in.');
+      router.push('/admin/login');
       setLoading(false);
       return;
     }
 
-    const formDataToSend = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value);
-    });
-
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register/tutor', {
+      const response = await fetch(`${API_URL}/auth/register/tutor`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json',
         },
-        body: formDataToSend,
+        body: JSON.stringify(formData),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         alert('Teacher added successfully!');
         router.push('/admin/teachers');
       } else {
-        const data = await response.json();
-        alert(`Failed to add teacher: ${data.message}`);
+        if (response.status === 401) {
+          authService.removeToken();
+          router.push('/admin/login');
+        }
+        throw new Error(data.message || 'Failed to add teacher');
       }
     } catch (error) {
       console.error('Error adding teacher:', error);
-      alert('Error adding teacher');
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className={styles.addTeacher}>
       <h1 className={styles.title}>Add Teachers</h1>
       <p className={styles.subtitle}>Manually</p>
+
+      {error && <div className={styles.error}>{error}</div>}
 
       <form className={styles.form} onSubmit={handleAddTeacher}>
         <div className={styles.formGroup}>

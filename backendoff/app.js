@@ -33,19 +33,35 @@ const io = initializeSocket(server);
 // Security middleware
 app.use(helmet());
 
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     const allowedOrigins = ['http://localhost:5000'];
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Nên dùng array thay vì string
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], // Nên dùng array thay vì string
+//   credentials: true,
+//   maxAge: 86400 // Thêm thời gian cache preflight requests (24 hours)
+// };
+
+
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:5000'];
+    const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Nên dùng array thay vì string
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], // Nên dùng array thay vì string
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
-  maxAge: 86400 // Thêm thời gian cache preflight requests (24 hours)
+  maxAge: 86400
 };
 
 app.use(cors(corsOptions));
