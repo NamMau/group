@@ -1,0 +1,78 @@
+.dashboard {
+    padding: 20px;
+  }
+  
+  .title {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .card {
+    background-color: #e6f0fa;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  
+  .cardNumber {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .cardLabel {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  
+  .cardButton {
+    background: none;
+    border: none;
+    color: #3b5998;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  
+  .cardButton:hover {
+    text-decoration: underline;
+  }
+  
+  .addBlocks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  
+  .addBlock {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .addIcon {
+    font-size: 2rem;
+    margin-right: 15px;
+  }
+  
+  .addTitle {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 5px;
+  }
+  
+  .addDescription {
+    font-size: 0.9rem;
+    color: #666;
+  }
