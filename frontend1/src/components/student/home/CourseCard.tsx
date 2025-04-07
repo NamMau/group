@@ -6,17 +6,16 @@ interface CourseCardProps {
 
 const CourseCard: React.FC<CourseCardProps> = ({ title }) => {
   return (
-    <div className="bg-gradient-to-r from-gray-300 to-gray-200 p-4 rounded-md flex flex-col items-center">
-      {/* Sử dụng next/image */}
+    <div className="bg-[#F4F1EC] border border-[#D6CCC2] p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col items-center">
       <Image
         src="/html5.png"
         alt="HTML5"
-        width={64} // tương ứng w-16
-        height={64} // tương ứng h-16
-        className="mb-2"
+        width={64}
+        height={64}
+        className="mb-3"
       />
-      <h2 className="text-lg font-bold">{title}</h2>
-      <button className="text-blue-500 mt-2">View &gt;</button>
+      <h2 className="text-base font-semibold text-[#5A3E2B]">{title}</h2>
+      <button className="text-[#A67B5B] mt-2 font-medium hover:underline">View &gt;</button>
     </div>
   );
 };

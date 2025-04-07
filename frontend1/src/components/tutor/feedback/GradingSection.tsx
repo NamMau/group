@@ -1,5 +1,7 @@
 import { FaFilePdf } from "react-icons/fa";
 import Image from "next/image";
+import Link from "next/link";
+
 
 interface GradingSectionProps {
   gradedOn: string;
@@ -42,9 +44,12 @@ const GradingSection = ({
       </div>
 
       {/* Add Comment Button */}
-      <button className="mt-3 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
-        Add comment
-      </button>
+      <Link href="/tutor/feedback/detail">
+        <button className="mt-3 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+          Add comment
+        </button>
+      </Link>
+
 
       {/* Annotated PDF */}
       <div className="flex items-center py-2 mt-3">

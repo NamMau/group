@@ -1,4 +1,4 @@
-"use client";
+
 import { useState, useRef, useEffect } from "react";
 import { FaBell } from "react-icons/fa";
 

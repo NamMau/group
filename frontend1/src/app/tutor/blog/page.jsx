@@ -1,8 +1,8 @@
 "use client";
-import Sidebar from "@/components/student/dashboard/Sidebar";
-import Navbar from "@/components/student/dashboard/Navbar";
-import BlogPost from "@/components/student/blog/BlogPost";
-import TutorList from "@/components/student/blog/TutorList";
+import Sidebar from "@/components/tutor/dashboard/Sidebar";
+import Navbar from "@/components/tutor/dashboard/Navbar";
+import BlogPost from "@/components/tutor/blog/BlogPost";
+import TutorList from "@/components/tutor/blog/TutorList";
 
 const PersonalBlog = () => {
   return (

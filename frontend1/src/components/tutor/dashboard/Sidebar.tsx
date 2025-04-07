@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, FaDashcube } from "react-icons/fa";
+import { FaHome, FaBook, FaCalendarAlt, FaUser, FaCog, FaDashcube } from "react-icons/fa";
 
 const menuItems = [
   { name: "Home", icon: <FaHome />, path: "/tutor" },
   { name: "Dashboard", icon: <FaDashcube />, path: "/tutor/dashboard" },
-  { name: "My Course", icon: <FaBook />, path: "/tutor/feedback" },
+  { name: "Feedback", icon: <FaBook />, path: "/tutor/feedback" },
   { name: "Appointment", icon: <FaCalendarAlt />, path: "/tutor/appointment" },
-  { name: "Document", icon: <FaFileAlt />, path: "/tutor/document" },
-  { name: "Meeting", icon: <FaEnvelope />, path: "/tutor/meeting" },
   { name: "Personal Blog", icon: <FaUser />, path: "/tutor/blog" },
 ];
 
@@ -19,8 +17,6 @@ const Sidebar = () => {
 
   return (
     <div className="w-64 h-[calc(100vh-70px)] bg-[#F5F5F5] shadow-md fixed left-0 top-[70px] flex flex-col p-5">
-      {/* Logo */}
-      <h2 className="text-gray-700 font-semibold text-xl mb-6">Dashboard</h2>
 
       {/* Menu Items */}
       <ul className="flex-1">
