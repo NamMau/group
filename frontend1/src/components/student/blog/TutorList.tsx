@@ -1,13 +1,17 @@
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import { FiStar, FiUsers, FiPlus, FiBook, FiPhone, FiRefreshCw } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { UserService } from '@/services/userService';
+
+
+import Image from "next/image";
+
+const userService = new UserService(); // Instantiate UserService
 
 interface Tutor {
   _id: string;
   fullName: string;
-  email: string;
+  email: string;  
   role: string;
   isActive: boolean;
   students: string[];
@@ -38,24 +42,11 @@ const TutorList: React.FC<TutorListProps> = ({
   const fetchTutors = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setError('Please login to view tutors');
-        return;
-      }
-
-      const response = await axios.get(
-        'http://localhost:5000/api/v1/users/get-tutors',
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      setTutors(response.data.data);
+      const tutorsData = await userService.getTutors(); // Fetch tutors from UserService
+      setTutors(tutorsData as Tutor[]); // Cast to Tutor[]
     } catch (err: any) {
       console.error('Error fetching tutors:', err);
-      setError(err.response?.data?.message || 'Failed to fetch tutors');
+      setError(err.message || 'Failed to fetch tutors');
     } finally {
       setLoading(false);
     }

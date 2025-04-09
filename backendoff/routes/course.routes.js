@@ -12,7 +12,7 @@ router.post('/:courseId/enroll-bulk', authenticate, isAdmin, courseController.bu
 router.post('/create-course', authenticate, isAdmin, courseController.createCourse);
 router.get('/get-courses',  authenticate,courseController.getCourses);
 router.get('/:courseId', courseController.getCourseById);
-router.put('/update-course:courseId', authenticate, isOwnerOrAdmin, courseController.updateCourse);
+router.put('/update-course/:courseId', authenticate, isOwnerOrAdmin, courseController.updateCourse);
 router.delete('/delete-course:courseId', authenticate, isOwnerOrAdmin, courseController.deleteCourse);
 
 router.get("/:userId/courses", courseController.getUserCourses);
@@ -25,11 +25,14 @@ router.get("/:userId/courses", courseController.getUserCourses);
 // router.delete('/:courseId/classes/:classId', isOwnerOrAdmin, courseController.deleteClass);
 
 // Dashboard
-router.get('/student-dashboard/:studentId', courseController.getStudentDashboard);
-router.get('/tutor-dashboard/:tutorId', courseController.getTutorDashboard);
+router.get('/student-dashboard/:studentId', authenticate, courseController.getStudentDashboard);
+router.get('/tutor-dashboard/:tutorId', authenticate, courseController.getTutorDashboard);
+
+// New route for getting courses by tutor
+router.get('/coursebytutor/:tutorId', authenticate, courseController.getCoursesByTutor); // New route
 
 // Course enrollment
-router.post('/:courseId/enroll', authenticate, courseController.enrollInCourse);
+router.post('/enroll/:courseId', authenticate, courseController.enrollInCourse);
 router.post('/:courseId/unenroll', courseController.unenrollFromCourse);
 router.get('/:courseId/enrollments', isOwnerOrAdmin, courseController.getCourseEnrollments);
 router.get('/getcoursebyname/:name', authenticate, courseController.getCourseByName);

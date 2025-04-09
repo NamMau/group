@@ -1,34 +1,106 @@
-"use client";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// "use client";
+// import { useState, useEffect } from 'react';
+// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// import axios from 'axios';
+// import { authService } from '../../../services/authService';
 
-const data = [
-  { day: 'Mon', Class1: 40, Class2: 60, Class3: 20 },
-  { day: 'Tue', Class1: 30, Class2: 80, Class3: 50 },
-  { day: 'Wed', Class1: 70, Class2: 50, Class3: 40 },
-  { day: 'Thu', Class1: 60, Class2: 30, Class3: 80 },
-  { day: 'Fri', Class1: 50, Class2: 70, Class3: 90 },
-  { day: 'Sat', Class1: 80, Class2: 90, Class3: 60 },
-  { day: 'Sun', Class1: 20, Class2: 40, Class3: 30 },
-];
+// interface AppointmentData {
+//   day: string;
+//   [key: string]: number | string;
+// }
 
-const ClassAppointmentsChart = () => {
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-2">Class Appointments</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="day" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="Class1" stroke="#8884d8" strokeWidth={2} />
-          <Line type="monotone" dataKey="Class2" stroke="#ff6b6b" strokeWidth={2} />
-          <Line type="monotone" dataKey="Class3" stroke="#4bc0c0" strokeWidth={2} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+// const COLORS = ['#8884d8', '#ff6b6b', '#4bc0c0'];
 
-export default ClassAppointmentsChart;
+// const ClassAppointmentsChart = () => {
+//   const [data, setData] = useState<AppointmentData[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [classes, setClasses] = useState<string[]>([]);
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         const token = authService.getToken();
+//         if (!token) {
+//           setData([]);
+//           setLoading(false);
+//           return;
+//         }
+
+//         const response = await axios.get('http://localhost:5000/api/v1/analytics/class-appointments', {
+//           headers: { Authorization: `Bearer ${token}` }
+//         });
+
+//         const { appointments, classNames } = response.data.data;
+//         setData(appointments || []);
+//         setClasses(classNames || []);
+//         setError(null);
+//       } catch (err) {
+//         console.error("Error fetching class appointments:", err);
+//         setError(err instanceof Error ? err.message : "Failed to fetch appointments");
+//         setData([]);
+//         setClasses([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchData();
+//   }, []);
+
+//   if (loading) {
+//     return (
+//       <div className="bg-white p-4 rounded-lg shadow-md">
+//         <h2 className="text-lg font-semibold mb-2">Class Appointments</h2>
+//         <div className="h-[300px] flex items-center justify-center">
+//           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="bg-white p-4 rounded-lg shadow-md">
+//         <h2 className="text-lg font-semibold mb-2">Class Appointments</h2>
+//         <div className="h-[300px] flex items-center justify-center text-red-500">
+//           {error}
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="bg-white p-4 rounded-lg shadow-md">
+//       <h2 className="text-lg font-semibold mb-2">Class Appointments</h2>
+//       {data.length > 0 && classes.length > 0 ? (
+//         <ResponsiveContainer width="100%" height={300}>
+//           <LineChart data={data}>
+//             <CartesianGrid strokeDasharray="3 3" />
+//             <XAxis dataKey="day" />
+//             <YAxis />
+//             <Tooltip />
+//             <Legend />
+//             {classes.map((className, index) => (
+//               <Line
+//                 key={className}
+//                 type="monotone"
+//                 dataKey={className}
+//                 stroke={COLORS[index % COLORS.length]}
+//                 strokeWidth={2}
+//                 dot={{ r: 4 }}
+//                 activeDot={{ r: 6 }}
+//               />
+//             ))}
+//           </LineChart>
+//         </ResponsiveContainer>
+//       ) : (
+//         <div className="h-[300px] flex items-center justify-center text-gray-500">
+//           No appointment data available
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default ClassAppointmentsChart;

@@ -10,29 +10,29 @@ const router = express.Router();
 
 // Student routes
 router.get('/get-student/:studentId', 
-  authenticate, checkRole('student', 'admin'),
+  authenticate,
   appointmentController.getAppointmentsByStudent
 );
 router.post('/create-appointment', 
-  authenticate, checkRole('student', 'admin'),
+  authenticate,
   appointmentController.createAppointment
 );
 router.delete('/delete-appointment/:appointmentId', 
-  authenticate, checkRole('student', 'admin'),
+  authenticate,
   appointmentController.deleteAppointment
 );
 
 // Tutor routes
 router.get('/tutor/:tutorId', 
-  authenticate, checkRole('tutor', 'admin'),
+  authenticate,
   appointmentController.getAppointmentsByTutor
 );
 router.get('/:appointmentId', 
-  checkRole('student', 'tutor', 'admin'),
+  authenticate,
   appointmentController.getAppointmentById
 );
 router.patch('/:appointmentId/status', 
-  checkRole('tutor', 'admin'),
+  authenticate,
   appointmentController.updateAppointmentStatus
 );
 

@@ -2,8 +2,10 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { userService } from "../../../services/userService";
+import { authService } from "../../../services/authService";
 
-interface Tutor {
+export interface Tutor {
   _id: string;
   fullName: string;
   email: string;
@@ -29,19 +31,40 @@ const TutorList = ({ onNewPost, onTutorClick }: TutorListProps) => {
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const router = useRouter();
 
+  // useEffect(() => {
+  //   const fetchTutors = async () => {
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       if (!token) {
+  //         router.push('/tutor/login');
+  //         return;
+  //       }
+
+  //       const response = await axios.get('http://localhost:5000/api/v1/users/get-tutors', {
+  //         headers: { Authorization: `Bearer ${token}` }
+  //       });
+  //       setTutors(response.data.data);
+  //     } catch (err) {
+  //       console.error("Error fetching tutors:", err);
+  //       setError(err instanceof Error ? err.message : "Failed to fetch tutors");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchTutors();
+  // }, [router]);
   useEffect(() => {
     const fetchTutors = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = authService.getToken();;
         if (!token) {
           router.push('/tutor/login');
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/v1/users/get-tutors', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setTutors(response.data.data);
+        const fetchedTutors = await userService.getTutors();
+        setTutors(fetchedTutors);
       } catch (err) {
         console.error("Error fetching tutors:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch tutors");
@@ -53,15 +76,32 @@ const TutorList = ({ onNewPost, onTutorClick }: TutorListProps) => {
     fetchTutors();
   }, [router]);
 
+  // const handleTutorClick = async (tutorId: string) => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) return;
+
+  //     const response = await axios.get(`http://localhost:5000/api/v1/users/profile/${tutorId}`, {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     });
+  //     setSelectedTutor(response.data.data);
+  //     onTutorClick(tutorId);
+  //   } catch (err) {
+  //     console.error("Error fetching tutor profile:", err);
+  //   }
+  // };
   const handleTutorClick = async (tutorId: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = authService.getToken();;
       if (!token) return;
-
-      const response = await axios.get(`http://localhost:5000/api/v1/users/profile/${tutorId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSelectedTutor(response.data.data);
+  
+      // Use the userService to fetch tutor profile
+      const tutorProfile = await userService.getProfile(tutorId);
+  
+      // Set the selected tutor data
+      setSelectedTutor(tutorProfile);
+  
+      // Call the onTutorClick handler with the tutorId
       onTutorClick(tutorId);
     } catch (err) {
       console.error("Error fetching tutor profile:", err);
@@ -102,7 +142,7 @@ const TutorList = ({ onNewPost, onTutorClick }: TutorListProps) => {
             onClick={() => handleTutorClick(tutor._id)}
           >
             <Image
-              src={tutor.avatar || "/images/default-avatar.png"}
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(tutor.fullName)}&background=random`}
               alt={tutor.fullName}
               width={32}
               height={32}

@@ -1,43 +1,42 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { FaBell, FaTrash, FaCheck } from "react-icons/fa";
-import { notificationService, Notification } from "../../../services/notificationService";
+import { notificationService, AppNotification } from "../../../services/notificationService"; // Import notificationService
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const NotificationDropdown = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch notifications when dropdown is opened
+  // Fetch notifications
   useEffect(() => {
-    const fetchData = async () => {
-      if (!isOpen) return;
-      
+    const fetchNotifications = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
+        const fetchedNotifications = await notificationService.fetchNotifications();
+        setNotifications(fetchedNotifications);
+        setUnreadCount(fetchedNotifications.filter((n: AppNotification) => !n.isRead).length);
         setError(null);
-        const [notifs, unread] = await Promise.all([
-          notificationService.getNotifications(),
-          notificationService.getUnreadCount()
-        ]);
-        setNotifications(notifs);
-        setUnreadCount(unread);
       } catch (err) {
-        setError("Failed to load notifications");
         console.error("Error fetching notifications:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch notifications");
+        // Don't clear notifications on error
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchData();
-  }, [isOpen]);
+    fetchNotifications();
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -54,7 +53,8 @@ const NotificationDropdown = () => {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await notificationService.markAsRead(notificationId);
+      await notificationService.markNotificationAsRead(notificationId);
+      // Update local state
       setNotifications(prev =>
         prev.map(notif =>
           notif._id === notificationId ? { ...notif, isRead: true } : notif
@@ -63,29 +63,20 @@ const NotificationDropdown = () => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error("Error marking notification as read:", err);
+      // Don't show error to user, just log it
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    try {
-      await notificationService.markAllAsRead();
-      setNotifications(prev =>
-        prev.map(notif => ({ ...notif, isRead: true }))
-      );
-      setUnreadCount(0);
-    } catch (err) {
-      console.error("Error marking all notifications as read:", err);
-    }
+    setNotifications(prev =>
+      prev.map(notif => ({ ...notif, isRead: true }))
+    );
+    setUnreadCount(0);
   };
 
   const handleDelete = async (notificationId: string) => {
-    try {
-      await notificationService.deleteNotification(notificationId);
-      setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error("Error deleting notification:", err);
-    }
+    setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const formatTime = (dateString: string) => {
@@ -133,9 +124,9 @@ const NotificationDropdown = () => {
 
           {/* Notification List */}
           <div className="max-h-60 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            {loading ? (
+              <div className="flex justify-center items-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
               </div>
             ) : error ? (
               <div className="text-center text-red-500 py-4">{error}</div>
@@ -160,8 +151,8 @@ const NotificationDropdown = () => {
                   {/* Avatar */}
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <Image
-                      src={notification.sender.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.sender.fullName)}&background=random`}
-                      alt={notification.sender.fullName}
+                      src={notification.user.avatar}
+                      alt={notification.user.fullName}
                       fill
                       className="rounded-full object-cover"
                     />
@@ -170,7 +161,7 @@ const NotificationDropdown = () => {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <p className="text-gray-800 font-medium">{notification.sender.fullName}</p>
+                      <p className="text-gray-800 font-medium">{notification.user.fullName}</p>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -181,7 +172,7 @@ const NotificationDropdown = () => {
                         <FaTrash className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-gray-600 text-sm truncate">{notification.content}</p>
+                    <p className="text-gray-600 text-sm truncate">{notification.message}</p>
                     <p className="text-gray-500 text-xs mt-1">{formatTime(notification.createdAt)}</p>
                   </div>
                 </div>

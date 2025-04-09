@@ -8,6 +8,9 @@ interface BlogPostProps {
   post: BlogPostType;
   onUpdate?: (updatedPost: BlogPostType) => void;
   onDelete?: (postId: string) => void;
+  onToggleLike?: (postId: string) => Promise<void>;
+  onAddComment?: (postId: string, content: string) => Promise<void>;
+  onDeleteComment?: (postId: string, commentId: string) => Promise<void>;
   currentUserId: string;
 }
 
@@ -15,11 +18,16 @@ const BlogPost: React.FC<BlogPostProps> = ({
   post,
   onUpdate,
   onDelete,
-  currentUserId
+  onToggleLike,
+  onAddComment,
+  onDeleteComment,
+  currentUserId,
 }) => {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [isCommenting, setIsCommenting] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -35,8 +43,7 @@ const BlogPost: React.FC<BlogPostProps> = ({
   const handleLike = async () => {
     try {
       setIsLiking(true);
-      const updatedPost = await blogService.toggleLike(post._id);
-      onUpdate?.(updatedPost);
+      await onToggleLike?.(post._id);
     } catch (error) {
       console.error('Error liking post:', error);
       // Handle error (show toast, etc.)
@@ -47,11 +54,33 @@ const BlogPost: React.FC<BlogPostProps> = ({
 
   const handleDelete = async () => {
     try {
-      await blogService.deletePost(post._id);
-      onDelete?.(post._id);
+      await onDelete?.(post._id);
       setShowMenu(false);
     } catch (error) {
       console.error('Error deleting post:', error);
+      // Handle error (show toast, etc.)
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      setIsCommenting(true);
+      await onAddComment?.(post._id, newComment);
+      setNewComment("");
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      // Handle error (show toast, etc.)
+    } finally {
+      setIsCommenting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await onDeleteComment?.(post._id, commentId);
+    } catch (error) {
+      console.error('Error deleting comment:', error);
       // Handle error (show toast, etc.)
     }
   };
@@ -76,7 +105,7 @@ const BlogPost: React.FC<BlogPostProps> = ({
             <p className="text-sm text-gray-500">{formatDate(post.createdAt)}</p>
           </div>
         </div>
-        
+
         {/* Menu Button */}
         {isAuthor && (
           <div className="relative">
@@ -107,17 +136,17 @@ const BlogPost: React.FC<BlogPostProps> = ({
       </div>
 
       {/* Image */}
-      {post.featuredImage && (
+      {/* {post.featuredImage && (
         <div className="mt-4">
           <Image
             src={post.featuredImage}
-            alt="Post Image"
+            alt="Post Image: ${post.title}"
             width={800}
             height={400}
             className="w-full object-cover"
           />
         </div>
-      )}
+      )} */}
 
       {/* Tags */}
       {post.tags && post.tags.length > 0 && (
@@ -159,6 +188,39 @@ const BlogPost: React.FC<BlogPostProps> = ({
             </span>
           </div>
         </div>
+      </div>
+      {/* Comments section */}
+      <div className="p-4">
+        <div className="mt-4">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add a comment..."
+            className="border p-2 w-full rounded-md"
+          />
+          <button
+            onClick={handleAddComment}
+            disabled={isCommenting}
+            className="mt-2 bg-blue-500 text-white p-2 rounded-md disabled:opacity-50"
+          >
+            Post
+          </button>
+        </div>
+        {post.comments.map((comment) => (
+          <div key={comment._id} className="mt-2 border-b pb-2">
+            <p className="font-semibold">{comment.author.fullName}</p>
+            <p>{comment.content}</p>
+            {comment.author._id === currentUserId && (
+              <button
+                onClick={() => handleDeleteComment(comment._id)}
+                className="text-red-500 text-sm"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

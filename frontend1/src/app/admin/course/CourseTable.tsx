@@ -3,13 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './course.module.css';
-import { authService, API_URL } from '../../../services/authService';
-
-interface Course {
-  _id: string;
-  name: string;
-  description: string;
-}
+import { authService } from '../../../services/authService';
+import { courseService, Course } from '../../../services/courseService'; // Import courseService and Course interface
 
 interface CourseTableProps {
   searchTerm?: string;
@@ -36,31 +31,18 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
           return;
         }
 
-        const response = await fetch(`${API_URL}/courses/get-courses`, {
-          method: 'GET',
-          headers: authService.getAuthHeaders(),
-          cache: 'no-store'
-        });
-
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Response data:', data);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log('Unauthorized, removing token and redirecting');
-            authService.removeToken();
-            router.push('/admin/login');
-            return;
-          }
-          throw new Error(data.message || 'Failed to fetch courses');
-        }
-
-        // Ensure we're setting an array
-        setCourses(Array.isArray(data) ? data : []);
+        const coursesData = await courseService.getAllCourses();
+        console.log('Fetched Courses Data:', coursesData);
+        setCourses(coursesData);
       } catch (error) {
         console.error('Error fetching courses:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch courses');
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          console.log('Unauthorized, removing token and redirecting');
+          authService.removeToken();
+          router.push('/admin/login');
+        } else {
+          setError(error instanceof Error ? error.message : 'Failed to fetch courses');
+        }
       } finally {
         setLoading(false);
       }
@@ -69,9 +51,10 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
     fetchCourses();
   }, [router]);
 
-  const filteredCourses = courses.filter(course => 
-    course.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCourses = courses.filter(
+    (course) =>
+      course.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
@@ -102,40 +85,28 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
   const handleEditCourse = async (courseId: string) => {
     const newName = prompt('Enter new course name:');
     const newDescription = prompt('Enter new description:');
-  
+
     if (!newName || !newDescription) {
       alert('Course name and description cannot be empty.');
       return;
     }
-  
+
     try {
       if (!authService.isAuthenticated()) {
         router.push('/admin/login');
         return;
       }
 
-      const response = await fetch(`${API_URL}/courses/update-course/${courseId}`, {
-        method: 'PUT',
-        headers: authService.getAuthHeaders(),
-        body: JSON.stringify({ name: newName, description: newDescription }),
+      const updatedCourse = await courseService.updateCourse(courseId, {
+        name: newName,
+        description: newDescription,
       });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(data.message || 'Failed to update course');
-      }
 
-      setCourses(courses.map(course => 
-        course._id === courseId 
-          ? { ...course, name: newName, description: newDescription } 
-          : course
-      ));
+      setCourses(
+        courses.map((course) =>
+          course._id === courseId ? { ...course, ...updatedCourse } : course
+        )
+      );
       alert('Course updated successfully!');
     } catch (error) {
       console.error('Error updating course:', error);
@@ -145,29 +116,14 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
 
   const handleDeleteCourse = async (courseId: string) => {
     if (!confirm('Are you sure you want to delete this course?')) return;
-    
+
     try {
       if (!authService.isAuthenticated()) {
         router.push('/admin/login');
         return;
       }
 
-      const response = await fetch(`${API_URL}/courses/delete-course/${courseId}`, {
-        method: 'DELETE',
-        headers: authService.getAuthHeaders(),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(data.message || 'Failed to delete course');
-      }
-
+      await courseService.deleteCourse(courseId);
       setCourses(courses.filter((course) => course._id !== courseId));
       alert('Course deleted successfully!');
     } catch (error) {
@@ -178,30 +134,14 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
 
   const handleDeleteAll = async () => {
     if (!confirm('Are you sure you want to delete all selected courses?')) return;
-    
+
     try {
       if (!authService.isAuthenticated()) {
         router.push('/admin/login');
         return;
       }
 
-      const response = await fetch(`${API_URL}/courses/delete-courses`, {
-        method: 'DELETE',
-        headers: authService.getAuthHeaders(),
-        body: JSON.stringify({ courseIds: selectedCourses }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(data.message || 'Failed to delete courses');
-      }
-
+      await Promise.all(selectedCourses.map((id) => courseService.deleteCourse(id)));
       setCourses(courses.filter((course) => !selectedCourses.includes(course._id)));
       setSelectedCourses([]);
       alert('Courses deleted successfully!');
@@ -309,4 +249,4 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
       </div>
     </div>
   );
-} 
+}

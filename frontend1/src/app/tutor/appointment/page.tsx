@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Sidebar from "@/components/tutor/dashboard/Sidebar";
 import Navbar from "@/components/tutor/dashboard/Navbar";
 import Calendar from "@/components/tutor/appointment/Calendar";
 import AppointmentList from "@/components/tutor/appointment/AppointmentList";
 
 const AppointmentPage = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   return (
     <div className="flex bg-gray-100">
       {/* Sidebar */}
@@ -41,7 +43,7 @@ const AppointmentPage = () => {
                 View and manage your scheduled appointments
               </p>
             </div>
-            <AppointmentList />
+            <AppointmentList selectedDate={selectedDate}  />
           </div>
         </div>
       </div>

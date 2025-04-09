@@ -1,33 +1,18 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { meetingService, Meeting } from "@/services/meetingService";
 
-interface MeetingItemProps {
-  meetingId: string;
-  courseId: string;
-  courseName: string;
-  tutorId: string;
-  tutorName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
-  meetingLink?: string;
-  notes?: string;
+interface MeetingItemProps extends Meeting {
   onJoinMeeting: (meetingId: string) => void;
 }
 
 const MeetingItem: React.FC<MeetingItemProps> = ({
-  meetingId,
-  courseId,
-  courseName,
-  tutorId,
-  tutorName,
+  _id,
+  course,
+  tutor,
   date,
-  startTime,
-  endTime,
+  time,
   duration,
   status,
   meetingLink,
@@ -35,34 +20,16 @@ const MeetingItem: React.FC<MeetingItemProps> = ({
   onJoinMeeting,
 }) => {
   const router = useRouter();
+  const defaultMeetingLink = "https://meet.google.com/utd-bive-rmy";
 
-  const handleJoinMeeting = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.error("User is not logged in.");
-      return;
-    }
-
+  const handleJoinMeetingClick = async () => {
     try {
-      const response = await axios.post(
-        `http://localhost:5000/api/v1/meetings/${meetingId}/join-meeting`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (response.status === 200) {
-        const meetingLink = response.data.meetingLink || `/student/meeting/${meetingId}`;
-        router.push(meetingLink);
-      }
+      await meetingService.joinMeeting(_id);
+      const linkToJoin = meetingLink || defaultMeetingLink;
+      router.push(linkToJoin);
     } catch (error) {
-      console.error("Failed to join meeting:", 
-        error && typeof error === 'object' && 'response' in error 
-          ? (error.response as any)?.data?.message || 'Unknown error occurred'
-          : error instanceof Error 
-            ? error.message 
-            : 'An unexpected error occurred'
-      );
+      console.error("Failed to join meeting:", error);
+      // Optionally display an error message to the user
     }
   };
 
@@ -70,8 +37,6 @@ const MeetingItem: React.FC<MeetingItemProps> = ({
     switch (status) {
       case 'scheduled':
         return 'text-blue-400';
-      case 'ongoing':
-        return 'text-green-400';
       case 'completed':
         return 'text-gray-400';
       case 'cancelled':
@@ -81,31 +46,43 @@ const MeetingItem: React.FC<MeetingItemProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const formatDate = (date: Date | null) => {
+    try {
+      return date ? date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) : 'N/A';
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Invalid Date';
+    }
   };
 
-  const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatTime = (time: Date | null) => {
+    try {
+      if (!time) {
+        return 'N/A';
+      }
+      const hours = time.getHours().toString().padStart(2, '0');
+      const minutes = time.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return 'Invalid Time';
+    }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800">{courseName}</h3>
-          <p className="text-sm text-gray-600">Tutor: {tutorName}</p>
+          <h3 className="text-lg font-semibold text-gray-800">{course?.name || 'Course info unavailable'}</h3>
+          <p className="text-sm text-gray-600">Tutor: {tutor?.fullName || 'Tutor info unavailable'}</p>
           <div className="mt-2 text-sm text-gray-500">
             <p>Date: {formatDate(date)}</p>
-            <p>Time: {formatTime(startTime)} - {formatTime(endTime)}</p>
+            <p>Time: {formatTime(time)}</p>
             <p>Duration: {duration} minutes</p>
           </div>
           {notes && (
@@ -116,14 +93,12 @@ const MeetingItem: React.FC<MeetingItemProps> = ({
           <span className={`text-sm font-medium ${getStatusColor(status)}`}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
-          {status === 'ongoing' && (
-            <button
-              onClick={handleJoinMeeting}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Join Meeting
-            </button>
-          )}
+          <button
+            onClick={handleJoinMeetingClick} // Sử dụng hàm handleJoinMeetingClick
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Join Meeting
+          </button>
           {meetingLink && (
             <button
               onClick={() => navigator.clipboard.writeText(meetingLink)}

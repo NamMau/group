@@ -1,51 +1,47 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { blogService } from "../../../services/blogService";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
 import BlogPost from "@/components/student/blog/BlogPost";
-import TutorList from "@/components/student/blog/TutorList";
+//import TutorList, { TutorListProps, Tutor } from "@/components/student/blog/TutorList";
 import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
-import { BlogPost as BlogPostType } from "../../../services/blogService";
-
-interface Tutor {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar?: string;
-  specialization?: string;
-}
+import type { BlogPost as BlogPostType, UpdateBlogData } from "../../../services/blogService";
+import { userService } from "../../../services/userService";
+import { authService } from "../../../services/authService";
+import axios from "axios";
 
 const PersonalBlog = () => {
   const router = useRouter();
   const [blogs, setBlogs] = useState<BlogPostType[]>([]);
-  const [tutors, setTutors] = useState<Tutor[]>([]);
+  //const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
+        if (!authService.isAuthenticated()) {
           router.push('/login');
           return;
         }
 
-        // Fetch blogs
-        const blogResponse = await axios.get('http://localhost:5000/api/v1/blogs/get-blogs', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const blogResponse = await blogService.getAllBlogs();
+        const tutorResponse = await userService.getTutors();
 
-        // Fetch tutors
-        const tutorResponse = await axios.get('http://localhost:5000/api/v1/users/get-tutors', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        if (Array.isArray(blogResponse)) {
+          setBlogs(blogResponse);
+        } else {
+          setBlogs([]);
+        }
 
-        setBlogs(blogResponse.data);
-        setTutors(tutorResponse.data);
+        // if (Array.isArray(tutorResponse)) {
+        //   // Type cast the tutors fetched from userService to the Tutor interface
+        //   setTutors(tutorResponse as Tutor[]);
+        // } else {
+        //   setTutors([]);
+        // }
       } catch (err) {
         console.error("Error fetching data:", err);
         if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -63,13 +59,7 @@ const PersonalBlog = () => {
 
   const handleDeleteBlog = async (blogId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      await axios.delete(`http://localhost:5000/api/v1/blogs/${blogId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      await blogService.deletePost(blogId);
       setBlogs(blogs.filter(blog => blog._id !== blogId));
     } catch (err) {
       console.error("Error deleting blog:", err);
@@ -77,8 +67,23 @@ const PersonalBlog = () => {
     }
   };
 
-  const handleEditBlog = (blogId: string) => {
-    router.push(`/tutor/blog/edit/${blogId}`);
+  const handleEditBlog = async (blogId: string) => {
+    try {
+      const updatedBlogData: UpdateBlogData = {
+        title: "Updated Blog Title",
+        content: "Updated blog content",
+        tags: ["Updated Tag1", "Updated Tag2"],
+        visibility: "public",
+        //featuredImage: "default-avatar.png",
+      };
+
+      const response = await blogService.updatePost(blogId, updatedBlogData);
+      setBlogs(blogs.map(blog => (blog._id === blogId ? { ...blog, ...response } : blog)));
+      router.push('/tutor/blog');
+    } catch (err) {
+      console.error("Error editing blog:", err);
+      alert("Failed to update blog");
+    }
   };
 
   if (loading) {
@@ -118,21 +123,16 @@ const PersonalBlog = () => {
 
   return (
     <div className="flex bg-gray-100">
-      {/* Sidebar */}
       <div className="w-64 bg-white shadow-md fixed left-0 top-[70px] h-[calc(100vh-70px)]">
         <Sidebar />
       </div>
 
-      {/* Main content */}
       <div className="flex-1 ml-64">
-        {/* Navbar */}
         <div className="fixed top-0 left-64 w-[calc(100%-16rem)] h-16 bg-white shadow-md flex items-center px-6 z-50">
           <Navbar />
         </div>
 
-        {/* Nội dung chính */}
         <div className="pt-20 px-6 space-y-6 overflow-auto min-h-screen flex">
-          {/* Blog Content */}
           <div className="w-3/4">
             <div className="mb-6 flex justify-between items-center">
               <div>
@@ -149,17 +149,15 @@ const PersonalBlog = () => {
                 Create New Blog
               </button>
             </div>
-            {blogs.length > 0 ? (
+            {Array.isArray(blogs) && blogs.length > 0 ? (
               blogs.map((blog) => (
                 <div key={blog._id} className="relative group">
                   <BlogPost
                     post={blog}
                     currentUserId={localStorage.getItem('userId') || ''}
                     onUpdate={async () => {
-                      const response = await axios.get('http://localhost:5000/api/v1/blogs/get-blogs', {
-                        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                      });
-                      setBlogs(response.data);
+                      const updatedBlogs = await blogService.getAllBlogs();
+                      setBlogs(updatedBlogs);
                     }}
                     onDelete={async (postId) => {
                       await handleDeleteBlog(postId);
@@ -189,13 +187,13 @@ const PersonalBlog = () => {
             )}
           </div>
 
-          {/* Tutor List */}
-          <div className="w-1/4 p-4 bg-white shadow-md rounded-lg">
+          {/* <div className="w-1/4 p-4 bg-white shadow-md rounded-lg">
             <TutorList
+              tutors={tutors}
               onNewPost={() => router.push('/tutor/blog/create')}
               onTutorClick={(tutorId) => router.push(`/tutor/profile/${tutorId}`)}
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

@@ -1,51 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios from "axios";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import CourseDetail from "@/components/student/mycourse/course/CourseDetail";
 import CourseInfo from "@/components/student/mycourse/course/CourseInfo";
 import EnrollButton from "@/components/student/mycourse/course/RegisterButton";
-import Image from "next/image";
-
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { courseService, Course as CourseType } from "../../../services/courseService";
+import { authService } from "../../../services/authService";
 
 interface CourseDetailProps {
-  course: Course;
+  course: CourseType;
 }
 
 interface CourseInfoProps {
-  course: Course;
+  course: CourseType;
 }
 
 interface RegisterButtonProps {
-  course: Course;
+  course: CourseType;
 }
 
 const CoursePage = () => {
   const router = useRouter();
   const params = useParams();
   const courseId = params?.courseId as string;
-  const [course, setCourse] = useState<Course | null>(null);
+  const [course, setCourse] = useState<CourseType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -56,29 +38,28 @@ const CoursePage = () => {
       }
 
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
+        const user = authService.getUser();
+        if (!user || !user._id) {
           router.push('/login');
           return;
         }
 
-        const response = await axios.get<Course>(`http://localhost:5000/api/v1/courses/${courseId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        setUserId(user._id);
 
-        setCourse(response.data);
+        const courses = await courseService.getUserCourses(user._id);
+        const fetchedCourse = courses.find((c: CourseType) => c._id === courseId); // Explicitly type c
+
+        if (fetchedCourse) {
+          setCourse(fetchedCourse);
+        } else {
+          setError("Course not found");
+        }
       } catch (err) {
         console.error("Error fetching course:", err);
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status === 401) {
-            router.push('/login');
-          } else if (err.response?.status === 404) {
-            setError("Course not found");
-          } else {
-            setError(err.response?.data?.message || "Failed to fetch course details");
-          }
+        if (err instanceof Error && err.message === 'Authentication required') {
+          router.push('/login');
         } else {
-          setError("An unexpected error occurred");
+          setError("Failed to fetch course details");
         }
       } finally {
         setLoading(false);
@@ -134,7 +115,7 @@ const CoursePage = () => {
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    {course.students.length} students
+                    {course.students?.length} students
                   </span>
                   <span className="flex items-center">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,4 +163,4 @@ const CoursePage = () => {
   );
 };
 
-export default CoursePage;
+export default CoursePage;  

@@ -1,26 +1,29 @@
 "use client";
 import Image from "next/image";
+import { JSX } from "react";
 import { useRouter } from "next/navigation";
-import { FaBook, FaUserGraduate, FaFileAlt } from "react-icons/fa";
+import { Course } from "@/services/courseService"; 
+import {
+  FaBook,
+  FaUserGraduate,
+  FaFileAlt,
+  FaHtml5,
+  FaReact,
+  FaJs,
+  FaPython,
+  FaCss3Alt,
+  FaBootstrap,
+} from "react-icons/fa";
 
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
-}
+const categoryIcons: { [key: string]: JSX.Element } = {
+  'Web Development': <FaHtml5 className="text-orange-500 text-2xl mr-2" />,
+  'Frontend': <FaReact className="text-blue-500 text-2xl mr-2" />,
+  'JavaScript': <FaJs className="text-yellow-500 text-2xl mr-2" />,
+  'Python': <FaPython className="text-green-500 text-2xl mr-2" />,
+  'UI/UX': <FaCss3Alt className="text-purple-500 text-2xl mr-2" />,
+  'React': <FaReact className="text-blue-500 text-2xl mr-2" />,
+  'Bootstrap': <FaBootstrap className="text-purple-700 text-2xl mr-2" />,
+};
 
 interface CourseCardProps {
   course: Course;
@@ -30,7 +33,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   const router = useRouter();
 
   const handleClick = () => {
-    router.push(`/student/document/${course._id}`);
+    //router.push(`/student/document/upload`);
+    router.push(`/student/document/upload/${course._id}`);
   };
 
   return (
@@ -56,10 +60,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       </div>
       
       <div className="mt-4">
-        <h3 className="text-lg font-semibold text-gray-800 hover:text-orange-500 transition-colors duration-200">
-          {course.name}
-        </h3>
-        
+         {/* Tiêu đề với icon danh mục */}
+         <div className="flex items-center">
+          {categoryIcons[course.category] || (
+            <FaBook className="text-gray-400 text-2xl mr-2" />
+          )}
+          <h3 className="text-lg font-semibold text-gray-800 hover:text-orange-500 transition-colors duration-200">
+            {course.name}
+          </h3>
+        </div>
+    
         <div className="flex items-center mt-2 text-sm text-gray-600">
           <FaUserGraduate className="mr-2" />
           <span>{course.tutor?.fullName || 'No tutor assigned'}</span>
@@ -86,6 +96,15 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
               {course.status.replace('_', ' ')}
             </span>
           </div>
+        </div>
+        {/* Button Go on */}
+        <div className="mt-4">
+          <button
+            onClick={handleClick}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-200"
+          >
+            Go on
+          </button>
         </div>
       </div>
     </div>

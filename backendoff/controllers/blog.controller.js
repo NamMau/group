@@ -31,6 +31,25 @@ const upload = multer({
     }
 });
 
+// Get all blog posts
+exports.getAllBlogs = async (req, res) => {
+    try {
+        // Lấy các bài blog mà không có điều kiện (hoặc có thể thêm các điều kiện khác)
+        const blogs = await Blog.find({})
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .sort({ createdAt: -1 });
+
+        if (!blogs || blogs.length === 0) {
+            return res.status(404).json({ message: 'No blogs found' });
+        }
+
+        res.json({data:blogs});
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching blog posts: ' + error.message });
+    }
+};
+
 // Create a new blog post
 exports.createBlog = async (req, res) => {
     try {
@@ -59,7 +78,7 @@ exports.createBlog = async (req, res) => {
         });
 
         await blog.save();
-        res.status(201).json(blog);
+        res.status(201).json({data:blog});
     } catch (error) {
         res.status(500).json({ message: 'Error creating blog post: ' + error.message });
     }
@@ -77,11 +96,11 @@ exports.getStudentBlogs = async (req, res) => {
         if (courseId) query.course = courseId;
 
         const blogs = await Blog.find(query)
-            .populate('author', 'name')
+            .populate('author', 'fullName email')
             .populate('course', 'name')
             .sort({ createdAt: -1 });
 
-        res.json(blogs);
+        res.json({data: blogs});
     } catch (error) {
         res.status(500).json({ message: 'Error fetching blog posts: ' + error.message });
     }
@@ -91,9 +110,9 @@ exports.getStudentBlogs = async (req, res) => {
 exports.getBlogById = async (req, res) => {
     try {
         const blog = await Blog.findById(req.params.id)
-            .populate('author', 'name')
+            .populate('author', 'fullName email')
             .populate('course', 'name')
-            .populate('comments.author', 'name');
+            .populate('comments.author', 'fullName');
 
         if (!blog) {
             return res.status(404).json({ message: 'Blog post not found' });
@@ -103,7 +122,7 @@ exports.getBlogById = async (req, res) => {
         blog.views += 1;
         await blog.save();
 
-        res.json(blog);
+        res.json({data: blog});
     } catch (error) {
         res.status(500).json({ message: 'Error fetching blog post: ' + error.message });
     }
@@ -131,7 +150,7 @@ exports.updateBlog = async (req, res) => {
         blog.featuredImage = featuredImage || blog.featuredImage;
 
         await blog.save();
-        res.json(blog);
+        res.json({data: blog});
     } catch (error) {
         res.status(500).json({ message: 'Error updating blog post: ' + error.message });
     }
@@ -174,7 +193,7 @@ exports.addComment = async (req, res) => {
         });
 
         await blog.save();
-        res.json(blog);
+        res.json({data:blog});
     } catch (error) {
         res.status(500).json({ message: 'Error adding comment: ' + error.message });
     }
@@ -197,7 +216,11 @@ exports.toggleLike = async (req, res) => {
         }
 
         await blog.save();
-        res.json(blog);
+        res.json({
+            success: true,
+            message: 'Like status updated',
+            data: blog
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error toggling like: ' + error.message });
     }
@@ -220,11 +243,11 @@ exports.searchBlogs = async (req, res) => {
         }
 
         const blogs = await Blog.find(searchQuery)
-            .populate('author', 'name')
+            .populate('author', 'fullName email')
             .populate('course', 'name')
             .sort({ createdAt: -1 });
 
-        res.json(blogs);
+        res.json({data:blogs});
     } catch (error) {
         res.status(500).json({ message: 'Error searching blog posts: ' + error.message });
     }
@@ -241,7 +264,7 @@ exports.createPost = [
             };
 
             const post = await blogService.createPost(postData);
-            res.status(201).json(post);
+            res.status(201).json({ data:post});
         } catch (error) {
             res.status(400).json({ message: error.message });
         }
@@ -257,7 +280,7 @@ exports.getPosts = async (req, res) => {
         };
 
         const posts = await blogService.getPosts(filters);
-        res.json(posts);
+        res.json({data: posts});
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -269,7 +292,7 @@ exports.getPostById = async (req, res) => {
             req.params.postId,
             req.user._id
         );
-        res.json(post);
+        res.json({data: post});
     } catch (error) {
         if (error.message === 'Blog post not found.') {
             res.status(404).json({ message: error.message });
@@ -295,7 +318,7 @@ exports.updatePost = [
                 updateData,
                 req.user._id
             );
-            res.json(post);
+            res.json({data: post});
         } catch (error) {
             if (error.message === 'Blog post not found.') {
                 res.status(404).json({ message: error.message });
@@ -332,7 +355,7 @@ exports.likePost = async (req, res) => {
             req.params.postId,
             req.user._id
         );
-        res.json(post);
+        res.json({data: post});
     } catch (error) {
         if (error.message === 'Blog post not found.') {
             res.status(404).json({ message: error.message });
@@ -349,7 +372,7 @@ exports.likeComment = async (req, res) => {
             req.params.commentId,
             req.user._id
         );
-        res.json(post);
+        res.json({data: post});
     } catch (error) {
         if (error.message === 'Blog post not found.') {
             res.status(404).json({ message: error.message });
@@ -371,7 +394,7 @@ exports.searchPosts = async (req, res) => {
                 ...req.query
             }
         );
-        res.json(posts);
+        res.json({data: posts});
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

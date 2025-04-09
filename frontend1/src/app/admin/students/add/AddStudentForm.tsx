@@ -6,6 +6,7 @@ import styles from './add.module.css';
 import { userService, Tutor } from '../../../../services/userService';
 import { authService } from '../../../../services/authService';
 import Image from 'next/image';
+import axios from 'axios';
 
 export default function AddStudentForm() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function AddStudentForm() {
         }
 
         console.log('Fetching tutors...');
-        const tutorsData = await userService.getTutors(token);
+        const tutorsData = await userService.getTutors();
         console.log('Fetched tutors:', tutorsData);
         setTutors(tutorsData);
       } catch (err) {
@@ -105,25 +106,18 @@ export default function AddStudentForm() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/register/student', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          console.log('Authentication failed, redirecting to login');
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register/student`,
+        formData,
+        {
+          headers: authService.getAuthHeaders()
         }
-        throw new Error(data?.message || 'Failed to register student');
+      );
+
+      if (response.status === 401) {
+        authService.removeToken();
+        router.push('/admin/login');
+        return;
       }
 
       setSuccess('Student added successfully!');
@@ -138,8 +132,14 @@ export default function AddStudentForm() {
       });
       setAvatarPreview('');
       router.push('/admin/students');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || 'Failed to register student');
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
     }
   };
 

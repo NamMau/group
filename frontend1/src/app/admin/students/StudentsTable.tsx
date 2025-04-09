@@ -47,7 +47,7 @@ export default function StudentsTable({ searchTerm = '' }: StudentsTableProps) {
           return;
         }
 
-        const data = await userService.getStudents(token);
+        const data = await userService.getStudents();
         setStudents(data);
       } catch (error) {
         console.error('Error fetching students:', error);
@@ -74,7 +74,7 @@ export default function StudentsTable({ searchTerm = '' }: StudentsTableProps) {
         return;
       }
 
-      await userService.deleteStudent(studentId, token);
+      await userService.deleteUser(studentId);
       setStudents(students.filter((student) => student._id !== studentId));
       alert('Student deleted successfully');
     } catch (error) {

@@ -1,312 +1,177 @@
-import { useState, useEffect, useRef } from "react";
-import { FaTimes, FaPaperclip, FaPaperPlane } from "react-icons/fa";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import io from "socket.io-client";
+'use client';
 
-interface Message {
-  _id: string;
-  sender: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  recipient: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  content: string;
-  isRead: boolean;
-  createdAt: string;
-}
+import { useEffect, useRef, useState } from 'react';
+import { chatService } from '@/services/chatService';
+import type { Message } from '@/services/chatService';
+import { authService } from '@/services/authService';
+import { BellIcon, X } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import Image from 'next/image';
 
 interface PopupMessageProps {
   isOpen: boolean;
   onClose: () => void;
-  user: { 
+  user: {
     id: string;
-    name: string; 
-    avatar?: string; 
+    name: string;
+    avatar?: string;
     isOnline: boolean;
   };
 }
 
-const PopupMessage = ({ isOpen, onClose, user }: PopupMessageProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [socket, setSocket] = useState<any>(null);
+export const PopupMessage = ({ isOpen, onClose, user }: PopupMessageProps) => {
+  const [unreadMessages, setUnreadMessages] = useState<Message[]>([]);
+  const [openMessageId, setOpenMessageId] = useState<string | null>(null);
+  const [conversation, setConversation] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [openList, setOpenList] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const newSocket = io('http://localhost:5000', {
-      auth: { token }
-    });
-
-    newSocket.on('connect', () => {
-      console.log('Socket connected');
-    });
-
-    newSocket.on('new_message', (message: Message) => {
-      if (message.sender._id === user.id || message.recipient._id === user.id) {
-        setMessages(prev => [...prev, message]);
-      }
-    });
-
-    newSocket.on('typing', (data: { userId: string, isTyping: boolean }) => {
-      if (data.userId === user.id) {
-        setIsTyping(data.isTyping);
-      }
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
-  }, [isOpen, user.id]);
-
-  // Fetch message history
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!isOpen) return;
-
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          router.push('/tutor/login');
-          return;
-        }
-
-        const currentUserId = localStorage.getItem("userId");
-        if (!currentUserId) {
-          console.error("No user ID found");
-          return;
-        }
-
-        const response = await axios.get(
-          `http://localhost:5000/api/v1/messages/conversation/${currentUserId}/${user.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        setMessages(response.data.data.messages || []);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch messages");
-      } finally {
-        setLoading(false);
-      }
+      const msgs = await chatService.getUnreadMessages();
+      setUnreadMessages(msgs);
     };
-
     fetchMessages();
-  }, [isOpen, user.id, router]);
+  }, []);
 
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Mark messages as read
-  useEffect(() => {
-    const markAsRead = async () => {
-      if (!isOpen || messages.length === 0) return;
-
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const unreadMessages = messages.filter(msg => !msg.isRead && msg.sender._id === user.id);
-        if (unreadMessages.length === 0) return;
-
-        await axios.post(
-          'http://localhost:5000/api/v1/messages/mark-read',
-          {
-            messageIds: unreadMessages.map(msg => msg._id)
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        // Update local messages state
-        setMessages(prevMessages =>
-          prevMessages.map(msg =>
-            !msg.isRead && msg.sender._id === user.id
-              ? { ...msg, isRead: true }
-              : msg
-          )
-        );
-      } catch (err) {
-        console.error("Error marking messages as read:", err);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenList(false);
+        setOpenMessageId(null);
       }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    markAsRead();
-  }, [isOpen, messages, user.id]);
-
-  // Handle typing indicator
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputText(e.target.value);
-    
-    if (!socket) return;
-
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // Emit typing status
-    socket.emit('typing', { recipientId: user.id, isTyping: true });
-
-    // Set timeout to stop typing indicator
-    typingTimeoutRef.current = setTimeout(() => {
-      socket.emit('typing', { recipientId: user.id, isTyping: false });
-    }, 1000);
+  const openConversation = async (message: Message) => {
+    setOpenMessageId(message._id);
+    const conv = await chatService.getConversation(message.sender._id);
+    setConversation(conv);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || sending) return;
-
-    try {
-      setSending(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push('/tutor/login');
-        return;
-      }
-
-      const currentUserId = localStorage.getItem("userId");
-      if (!currentUserId) {
-        console.error("No user ID found");
-        return;
-      }
-
-      const response = await axios.post(
-        'http://localhost:5000/api/v1/messages/send/send-message/:userId',
-        {
-          recipientId: user.id,
-          content: inputText.trim()
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      setMessages(prev => [...prev, response.data.data]);
-      setInputText("");
-      setError(null);
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setError(err instanceof Error ? err.message : "Failed to send message");
-    } finally {
-      setSending(false);
-    }
+  const handleSendMessage = async (e: React.FormEvent, receiverId: string) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    const message = await chatService.sendMessage(receiverId, newMessage);
+    setConversation((prev) => [...prev, message as Message]);
+    setNewMessage('');
   };
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation]);
+
+  if (!authService.isAuthenticated()) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 w-80 bg-white shadow-xl rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-300 to-orange-100">
-        <div className="flex items-center space-x-3">
-          <div className="relative w-10 h-10">
-            <Image
-              src={user.avatar || "/images/default-avatar.png"}
-              alt={user.name}
-              fill
-              className="rounded-full object-cover"
-            />
-          </div>
-          <div>
-            <p className="text-orange-700 font-semibold">{user.name}</p>
-            <p className="text-sm text-gray-500">
-              {user.isOnline ? <span className="text-green-500">● Active</span> : "Offline"}
-            </p>
-          </div>
-        </div>
-        <FaTimes className="text-gray-600 cursor-pointer hover:text-red-500" onClick={onClose} />
-      </div>
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        onClick={() => setOpenList(!openList)}
+        className="relative p-2 rounded-full hover:bg-gray-100"
+      >
+        <BellIcon className="w-6 h-6" />
+        {unreadMessages.length > 0 && (
+          <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs text-white bg-red-500 rounded-full">
+            {unreadMessages.length}
+          </span>
+        )}
+      </button>
 
-      {/* Messages */}
-      <div className="p-3 space-y-2 h-60 overflow-y-auto bg-gray-50">
-        {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-red-500 text-center">{error}</div>
-        ) : (
-          messages.map((msg) => (
-            <div
-              key={msg._id}
-              className={`flex ${msg.sender._id === user.id ? "justify-start" : "justify-end"}`}
-            >
-              <div className="flex flex-col max-w-[80%]">
-                <p
-                  className={`px-3 py-1 rounded-lg ${
-                    msg.sender._id === user.id ? "bg-orange-200" : "bg-gray-300"
-                  } text-gray-800`}
-                >
-                  {msg.content}
-                </p>
-                <span className="text-xs text-gray-400 mt-1">
-                  {new Date(msg.createdAt).toLocaleTimeString()}
-                </span>
+      {/* Danh sách tin nhắn chưa đọc */}
+      {openList && (
+        <div className="absolute right-0 z-50 mt-2 w-72 bg-white border border-gray-200 rounded-md shadow-lg">
+          {unreadMessages.length === 0 ? (
+            <div className="p-4 text-sm text-gray-500">Không có tin nhắn mới</div>
+          ) : (
+            unreadMessages.map((msg) => (
+              <div
+                key={msg._id}
+                onClick={() => openConversation(msg)}
+                className="p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+              >
+                <div className="font-semibold">{msg.sender.fullName}</div>
+                <div className="text-sm text-gray-600">{msg.content}</div>
+                <div className="text-xs text-gray-400">
+                  {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Popup tin nhắn */}
+      {openMessageId && (
+        <div className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl z-50">
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center space-x-3">
+              <Image
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  conversation[0]?.sender.fullName || 'Người dùng'
+                )}`}
+                alt={conversation[0]?.sender.fullName || 'Avatar'}
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
+              <div>
+                <h3 className="font-semibold">{conversation[0]?.sender.fullName}</h3>
+                <p className="text-sm text-gray-500">{conversation[0]?.sender.email}</p>
               </div>
             </div>
-          ))
-        )}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="px-3 py-1 rounded-lg bg-orange-200 text-gray-800">
-              <span className="text-sm">Typing...</span>
-            </div>
+            <button onClick={() => setOpenMessageId(null)} className="text-gray-500 hover:text-gray-700">
+              <X />
+            </button>
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Input */}
-      <div className="flex items-center p-2 border-t bg-white">
-        <button className="p-2 text-gray-500 hover:text-orange-500">
-          <FaPaperclip />
-        </button>
-        <input
-          type="text"
-          placeholder="Type a message..."
-          className="flex-1 p-2 outline-none bg-gray-100 rounded-full mx-2"
-          value={inputText}
-          onChange={handleInputChange}
-          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-          disabled={sending}
-        />
-        <button 
-          className={`p-2 ${sending ? 'text-gray-400' : 'text-orange-500 hover:text-orange-700'}`}
-          onClick={handleSendMessage}
-          disabled={sending}
-        >
-          <FaPaperPlane />
-        </button>
-      </div>
+          <div className="h-96 overflow-y-auto p-4">
+            {conversation.map((msg) => (
+              <div
+                key={msg._id}
+                className={`mb-4 ${
+                  msg.sender._id === conversation[0]?.sender._id ? 'text-left' : 'text-right'
+                }`}
+              >
+                <div
+                  className={`inline-block p-3 rounded-lg ${
+                    msg.sender._id === conversation[0]?.sender._id
+                      ? 'bg-gray-100 text-gray-800'
+                      : 'bg-blue-500 text-white'
+                  }`}
+                >
+                  <p>{msg.content}</p>
+                  <p className="text-xs mt-1 opacity-75">
+                    {new Date(msg.createdAt).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form
+            onSubmit={(e) => handleSendMessage(e, conversation[0]?.sender._id)}
+            className="p-4 border-t"
+          >
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Nhập tin nhắn..."
+                className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button type="submit" className="text-blue-500 hover:text-blue-700">
+                Gửi
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
-
-export default PopupMessage;

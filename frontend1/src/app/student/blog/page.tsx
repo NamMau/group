@@ -1,11 +1,15 @@
+
 "use client";
 import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
 import BlogPost from "@/components/student/blog/BlogPost";
 import TutorList from "@/components/student/blog/TutorList";
-import axios from "axios";
 import { BlogPost as BlogPostType } from "../../../services/blogService";
+import { blogService } from "../../../services/blogService";
+import { userService } from "../../../services/userService";
+import { authService } from "../../../services/authService";
+import { useRouter } from "next/navigation";
 
 type Tutor = {
   _id: string;
@@ -18,6 +22,7 @@ type Tutor = {
 }
 
 const PersonalBlog = () => {
+  const router = useRouter();
   const [blogs, setBlogs] = useState<BlogPostType[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,35 +32,49 @@ const PersonalBlog = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        // Check for token first
+        const token = authService.getToken();
         if (!token) {
-          setError("Authentication required");
+          console.error("No authentication token found");
+          router.push("/login");
           return;
         }
 
-        // Get student ID from token or user context
-        const studentId = localStorage.getItem("userId");
-        if (!studentId) {
-          setError("User ID not found");
+        // Get user info from localStorage
+        const userJson = localStorage.getItem("user");
+        if (!userJson) {
+          console.error("No user data found");
+          router.push("/login");
           return;
         }
-        setCurrentUserId(studentId);
 
-        // Fetch blogs and tutors in parallel
-        const [blogsResponse, tutorsResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/v1/blogs/get-blogstudent/${studentId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/v1/users/get-tutors', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
+        // Parse user data
+        try {
+          const userData = JSON.parse(userJson);
+          if (!userData._id) {
+            throw new Error("Invalid user data structure");
+          }
+          setCurrentUserId(userData._id);
+          
+          // Log for debugging
+          console.log("Using user ID:", userData._id);
 
-        setBlogs(blogsResponse.data.data || []); // Access the data property
-        setTutors(tutorsResponse.data.data || []); // Access the data property
+          // Fetch blogs and tutors in parallel
+          const [studentBlogs, tutorsData] = await Promise.all([
+            blogService.getStudentBlogs(userData._id),
+            userService.getTutors()
+          ]);
+
+          setBlogs(Array.isArray(studentBlogs) ? studentBlogs : []);
+          setTutors(Array.isArray(tutorsData) ? tutorsData : []);
+        } catch (parseError) {
+          console.error("Error parsing user data:", parseError);
+          authService.logout();
+          router.push("/login");
+          return;
+        }
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch data");
+        handleFetchError(err);
       } finally {
         setLoading(false);
       }
@@ -64,14 +83,76 @@ const PersonalBlog = () => {
     fetchData();
   }, []);
 
-  const handleUpdatePost = (updatedPost: BlogPostType) => {
-    setBlogs(blogs.map(blog => 
-      blog._id === updatedPost._id ? updatedPost : blog
-    ));
+  const handleFetchError = (error: unknown) => {
+    let errorMessage = "Failed to fetch data";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (error.message.includes("401")) {
+        authService.logout();
+        router.push("/login");
+      }
+    }
+    setError(errorMessage);
+    console.error("API Error:", error);
   };
 
-  const handleDeletePost = (postId: string) => {
-    setBlogs(blogs.filter(blog => blog._id !== postId));
+  const handleUpdatePost = async (updatedPost: BlogPostType) => {
+    try {
+      const result = await blogService.updatePost(updatedPost._id, {
+        title: updatedPost.title,
+        content: updatedPost.content,
+        tags: updatedPost.tags,
+        visibility: updatedPost.visibility,
+        featuredImage: updatedPost.featuredImage || ""
+      });
+      
+      setBlogs(prev => 
+        prev.map(post => post._id === updatedPost._id ? result : post)
+      );
+    } catch (err) {
+      console.error("Update failed:", err);
+      alert("Failed to update post");
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await blogService.deletePost(postId);
+      setBlogs(prev => prev.filter(post => post._id !== postId));
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete post");
+    }
+  };
+
+  const handleToggleLike = async (postId: string) => {
+    try {
+      const updatedPost = await blogService.toggleLike(postId);
+      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+    } catch (err) {
+      console.error("Toggle like failed:", err);
+      alert("Failed to toggle like");
+    }
+  };
+
+  const handleAddComment = async (postId: string, content: string) => {
+    try {
+      const updatedPost = await blogService.addComment(postId, content);
+      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+    } catch (err) {
+      console.error("Add comment failed:", err);
+      alert("Failed to add comment");
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try {
+      const updatedPost = await blogService.deleteComment(postId, commentId);
+      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+    } catch (err) {
+      console.error("Delete comment failed:", err);
+      alert("Failed to delete comment");
+    }
   };
 
   if (loading) {
@@ -88,6 +169,12 @@ const PersonalBlog = () => {
         <div className="text-red-500 text-center">
           <p className="text-xl font-semibold">Error</p>
           <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -95,25 +182,31 @@ const PersonalBlog = () => {
 
   return (
     <div className="flex bg-gray-100">
-      {/* Sidebar (Cố định bên trái) */}
       <div className="w-64 bg-white shadow-md fixed left-0 top-[70px] h-[calc(100vh-70px)]">
         <Sidebar />
       </div>
 
-      {/* Main content (Dịch phải tránh sidebar) */}
       <div className="flex-1 ml-64">
-        {/* Navbar (Cố định trên cùng) */}
         <div className="fixed top-0 left-64 w-[calc(100%-16rem)] h-16 bg-white shadow-md flex items-center px-6 z-50">
           <Navbar />
         </div>
 
-        {/* Nội dung chính (Thêm padding-top để tránh bị Navbar che) */}
         <div className="pt-20 px-6 space-y-6 overflow-auto min-h-screen flex">
-          {/* Blog Content */}
           <div className="w-3/4">
-            <h2 className="text-xl font-semibold mb-4">Personal Blog</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Personal Blog</h2>
+              <button
+                onClick={() => router.push("/student/blog/create")}
+                className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+              >
+                <span className="mr-2">+New Post</span>
+              </button>
+            </div>
+            
             {blogs.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No blog posts yet.</p>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-gray-500 text-center">Start writing your first blog post!</p>
+              </div>
             ) : (
               blogs.map((blog) => (
                 <BlogPost
@@ -121,19 +214,21 @@ const PersonalBlog = () => {
                   post={blog}
                   onUpdate={handleUpdatePost}
                   onDelete={handleDeletePost}
+                  onToggleLike={handleToggleLike}
+                  onAddComment={handleAddComment}
+                  onDeleteComment={handleDeleteComment}
                   currentUserId={currentUserId}
                 />
               ))
             )}
           </div>
 
-          {/* Tutor List (Chiếm 1/4 màn hình) */}
           <div className="w-1/4 p-4 bg-white shadow-md rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Top Tutors</h2>
-            <TutorList
-              onNewPost={() => {}}
-              onTutorClick={() => {}}
-            />
+            {/* <TutorList
+              tutors={tutors}
+              onTutorClick={(tutorId) => router.push(`/tutors/${tutorId}`)}
+            /> */}
           </div>
         </div>
       </div>
@@ -141,4 +236,4 @@ const PersonalBlog = () => {
   );
 };
 
-export default PersonalBlog; 
+export default PersonalBlog;

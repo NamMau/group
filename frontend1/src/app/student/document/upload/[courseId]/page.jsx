@@ -1,21 +1,30 @@
 "use client";
 import { useState } from "react";
+// Không cần import File từ 'node:buffer' vì ở trình duyệt, lớp File là toàn cục
+// import { File } from 'node:buffer';
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
 import FileActions from "@/components/student/document/upload/FileActions";
 import FileTable from "@/components/student/document/upload/FileTable";
 import CancelButton from "@/components/student/document/upload/CancelButton";
 import FilePicker from "@/components/student/document/upload/FilePicker"; // Import FilePicker
+import { documentService } from "@/services/documentService"; // Import documentService
+import { authService } from "@/services/authService"; // Import authService
 
 const DocumentUploadPage = () => {
   const [isFilePickerOpen, setIsFilePickerOpen] = useState(false);
+  // Khai báo state cho files
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Ví dụ: Tạo file bằng lớp File toàn cục (nếu cần test)
+  const exampleFile = new File(["content"], "filename.txt", { type: "text/plain" });
+  console.log("Example file:", exampleFile);
+
   // Xử lý khi người dùng chọn file
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
+    const selectedFiles = Array.from(e.target.files || []);
     setFiles(selectedFiles);
   };
 
@@ -26,12 +35,13 @@ const DocumentUploadPage = () => {
       return;
     }
 
-    // Validation kích thước file và số lượng file
-    if (files.length >= 1 && files.length <= 1) {
+    // Kiểm tra số lượng file (các bạn đề cập là 20 file tối đa)
+    if (files.length > 20) {
       setError("You can upload a maximum of 20 files.");
       return;
     }
 
+    // Tính tổng kích thước các file
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > 5 * 1024 * 1024) {
       setError("Total file size exceeds 5MB.");
@@ -45,22 +55,20 @@ const DocumentUploadPage = () => {
     });
 
     try {
-      const response = await fetch("http://localhost:5000/api/v1/documents/upload", {
-        method: "POST",
-        body: formData,
-        headers: {
-          //get token from local storage
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed. Please try again.");
+      const token = authService.getToken(); // Lấy token từ authService
+      if (!token) {
+        setError("You are not authenticated.");
+        return;
       }
 
-      // Clear files after successful upload
-      setFiles([]);
-      setError(""); // Clear any previous errors
+      // Gửi request sử dụng documentService
+      const response = await documentService.uploadDocument(formData, token);
+
+      // Xử lý kết quả trả về từ server
+      if (response) {
+        setFiles([]); // Xóa danh sách file sau khi tải lên thành công
+        setError(""); // Xóa lỗi nếu có
+      }
     } catch (uploadError) {
       setError(uploadError.message);
     } finally {

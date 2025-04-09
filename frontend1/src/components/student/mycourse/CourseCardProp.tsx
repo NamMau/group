@@ -1,28 +1,7 @@
 "use client";
 import React from "react";
 import { FaUserGraduate, FaClock, FaBookOpen, FaUserTie } from "react-icons/fa";
-
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
-  price?: number;
-  duration?: number; // in hours
-  totalLessons?: number;
-}
+import { Course } from "@/services/courseService"; 
 
 interface CourseCardProps {
   course: Course;
@@ -59,14 +38,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
   };
 
   const isNew = () => {
+    if (!course.createdAt) return false;
+  
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return new Date(course.createdAt) > oneWeekAgo;
-  };
+    
+    return course.createdAt > oneWeekAgo;
+  };  
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      {/* Course Image */}
       <div className="relative h-48 bg-gray-200">
         {course.tutor?.avatar && (
           <img 
@@ -85,7 +66,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
         </span>
       </div>
 
-      {/* Course Content */}
       <div className="p-4">
         <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2">{course.name}</h3>
         
@@ -100,29 +80,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick }) => {
             {course.level}
           </span>
         </div>
-
-        <div className="flex items-center justify-between mb-4">
-          {course.duration && (
-            <div className="flex items-center space-x-1">
-              <FaClock className="text-purple-500" />
-              <span className="text-sm text-gray-600">{course.duration}h</span>
-            </div>
-          )}
-          {course.totalLessons && (
-            <div className="flex items-center space-x-1">
-              <FaBookOpen className="text-green-500" />
-              <span className="text-sm text-gray-600">{course.totalLessons} lessons</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">{course.category}</span>
-          {course.price && (
-            <span className="text-lg font-bold text-orange-600">${course.price}</span>
-          )}
-        </div>
-
         <button 
           onClick={onClick}
           className="mt-4 w-full px-4 py-2 bg-[#C1915F] text-white rounded-md hover:bg-[#A6784D] transition-colors duration-200"

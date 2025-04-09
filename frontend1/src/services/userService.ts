@@ -1,51 +1,34 @@
-import { API_URL } from './authService';
+import { authService, API_URL } from './authService';
 
-export interface Tutor {
-  _id: string;
-  fullName: string;
-  email: string;
-  password: string;
-  role: string;
-  isActive: boolean;
-  personalTutor: string | null;
-  students: string[];
-  department: string;
-  phoneNumber: string;
-  preferences: Record<string, any>;
-  loginHistory: any[];
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
-
-export interface Student {
+export interface User {
   _id: string;
   fullName: string;
   email: string;
   phoneNumber?: string;
   department?: string;
+  role: string;
   avatar?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface UpdateStudentData {
-  fullName: string;
-  email: string;
+export interface Student extends User {
+  personalTutor?: string;
+}
+
+export interface Tutor extends User {
+  students?: string[];
+  preferences?: Record<string, any>;
+  loginHistory?: any[];
+}
+
+export interface UpdateUserData {
+  fullName?: string;
+  email?: string;
   phoneNumber?: string;
   department?: string;
   password?: string;
-}
-
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  phone?: string;
-  address?: string;
-  bio?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface StudyTime {
@@ -62,326 +45,489 @@ interface Notification {
   createdAt: string;
 }
 
-interface UserData {
-  fullName?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  bio?: string;
-}
-
-class UserService {
-  async getTutors(token: string): Promise<Tutor[]> {
-    try {
-      console.log('API_URL:', API_URL);
-      const response = await fetch(`${API_URL}/users/get-tutors`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-
-      console.log('Response status:', response.status);
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        throw new Error(errorData.message || 'Failed to fetch tutors');
-      }
-
-      const data = await response.json();
-      console.log('Response data:', data);
-
-      // Handle both response formats
-      if (Array.isArray(data)) {
-        console.log('Data is array, returning directly');
-        return data;
-      } else if (data.data && Array.isArray(data.data)) {
-        console.log('Data is wrapped in data property');
-        return data.data;
-      } else {
-        console.error('Unexpected response format:', data);
-        return [];
-      }
-    } catch (error) {
-      console.error('Error fetching tutors:', error);
-      throw error;
-    }
+export class UserService {
+  private getHeaders() {
+    return {
+      ...authService.getAuthHeaders(),
+      'Content-Type': 'application/json'
+    };
   }
 
-  async getStudent(studentId: string, token: string): Promise<Student> {
+  // Tutor methods
+  async createTutor(tutorData: Partial<Tutor>): Promise<Tutor> {
     try {
-      const response = await fetch(`${API_URL}/users/${studentId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await fetch(`${API_URL}/auth/register/tutor`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(tutorData)
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error('Unauthorized access');
+          authService.removeToken();
+          throw new Error('Authentication required');
         }
-        throw new Error('Failed to fetch student data');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create tutor');
       }
 
       return await response.json();
     } catch (error) {
+      console.error('Error in createTutor:', error);
       throw error;
     }
   }
 
-  async updateStudent(studentId: string, data: UpdateStudentData, token: string): Promise<void> {
+  async getTutors(): Promise<Tutor[]> {
     try {
-      const response = await fetch(`${API_URL}/users/update-user/${studentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
+      const response = await fetch(`${API_URL}/users/get-tutors`, {
+        // headers: this.getHeaders(), 
+        headers: {Authorization: `Bearer ${authService.getToken()}`}
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update student');
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch tutors');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
+      console.error('Error in getTutors:', error);
       throw error;
     }
   }
 
-  async deleteStudent(studentId: string, token: string): Promise<void> {
-    try {
-      const response = await fetch(`${API_URL}/users/delete-user/${studentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete student');
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async getStudents(token: string): Promise<Student[]> {
+  // Student methods
+  async getStudents(): Promise<Student[]> {
     try {
       const response = await fetch(`${API_URL}/users/get-students`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: this.getHeaders()
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error('Unauthorized access');
+          authService.removeToken();
+          throw new Error('Authentication required');
         }
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch students');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch students');
       }
 
       const data = await response.json();
-      
-      // Ensure we always return an array of students with proper data mapping
-      return Array.isArray(data) ? data.map(student => ({
-        _id: student._id,
-        fullName: student.fullName,
-        email: student.email,
-        phoneNumber: student.phoneNumber,
-        department: student.department,
-        avatar: student.avatar
-      })) : [];
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error in getStudents:', error);
       throw error;
     }
   }
 
-  // Lấy thông tin thời gian học tập của sinh viên
-  async getStudentStudyTime(studentId: string, token: string): Promise<StudyTime[]> {
+  async getUser(userId: string): Promise<User> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/students/${studentId}/study-time`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/${userId}`, {
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch study time data");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch user');
       }
 
-      if (!data.data || !Array.isArray(data.data)) {
-        throw new Error("Study time data is missing or not in expected format");
-      }
-
-      return data.data;
+      return await response.json();
     } catch (error) {
+      console.error('Error in getUser:', error);
       throw error;
     }
   }
 
-  // Lấy thông tin chi tiết của user
-  async getUserProfile(userId: string, token: string): Promise<User> {
+  async updateUser(userId: string, userData: UpdateUserData): Promise<User> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/update-user/${userId}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(userData)
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch user profile");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update user');
       }
 
-      return data.data;
+      return await response.json();
     } catch (error) {
+      console.error('Error in updateUser:', error);
       throw error;
     }
   }
 
-  // Cập nhật thông tin user
-  async updateUserProfile(userId: string, userData: UserData, token: string): Promise<User> {
+  async deleteUser(userId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
+      const response = await fetch(`${API_URL}/users/delete-user/${userId}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to update user profile");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete user');
       }
-
-      return data.data;
     } catch (error) {
+      console.error('Error in deleteUser:', error);
       throw error;
     }
   }
 
-  // Đổi mật khẩu
-  async changePassword(userId: string, oldPassword: string, newPassword: string, token: string): Promise<void> {
+  // Additional methods
+  async getStudentStudyTime(studentId: string): Promise<StudyTime[]> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/${userId}/change-password`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ oldPassword, newPassword }),
+      const response = await fetch(`${API_URL}/users/students/${studentId}/study-time`, {
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to change password");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch study time');
       }
+
+      const data = await response.json();
+      return data.data || [];
     } catch (error) {
+      console.error('Error in getStudentStudyTime:', error);
       throw error;
     }
   }
 
-  // Lấy danh sách khóa học đã đăng ký của sinh viên
-  async getEnrolledCourses(studentId: string, token: string): Promise<any[]> {
+  async getUserNotifications(userId: string): Promise<Notification[]> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/students/${studentId}/courses`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/${userId}/notifications`, {
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch enrolled courses");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch notifications');
       }
 
-      return data.data;
+      const data = await response.json();
+      return data.data || [];
     } catch (error) {
+      console.error('Error in getUserNotifications:', error);
       throw error;
     }
   }
 
-  // Lấy danh sách bài tập đã nộp của sinh viên
-  async getSubmittedAssignments(studentId: string, token: string): Promise<any[]> {
+  async markNotificationAsRead(userId: string, notificationId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/students/${studentId}/submissions`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/${userId}/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch submitted assignments");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to mark notification as read');
       }
-
-      return data.data;
     } catch (error) {
+      console.error('Error in markNotificationAsRead:', error);
       throw error;
     }
   }
 
-  // Lấy danh sách điểm số của sinh viên
-  async getStudentGrades(studentId: string, token: string): Promise<any[]> {
+  // Profile methods
+  async getProfile(userId: string): Promise<User> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/students/${studentId}/grades`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/profile/${userId}`, {
+        headers: this.getHeaders()
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch student grades");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch profile');
       }
 
-      return data.data;
+      return await response.json();
     } catch (error) {
+      console.error('Error in getProfile:', error);
       throw error;
     }
   }
 
-  // Lấy danh sách thông báo của user
-  async getUserNotifications(userId: string, token: string): Promise<Notification[]> {
+  async updateProfile(profileData: UpdateUserData): Promise<User> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/${userId}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(profileData)
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to fetch user notifications");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update profile');
       }
 
-      return data.data;
+      return await response.json();
     } catch (error) {
+      console.error('Error in updateProfile:', error);
       throw error;
     }
   }
 
-  // Đánh dấu thông báo đã đọc
-  async markNotificationAsRead(userId: string, notificationId: string, token: string): Promise<void> {
+  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     try {
-      const response = await fetch(`${API_URL}/api/v1/users/${userId}/notifications/${notificationId}/read`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/users/change-password`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ oldPassword, newPassword })
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to mark notification as read");
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to change password');
       }
     } catch (error) {
+      console.error('Error in changePassword:', error);
+      throw error;
+    }
+  }
+
+  async updateNotificationPreferences(preferences: any): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/users/notification-preferences`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update notification preferences');
+      }
+    } catch (error) {
+      console.error('Error in updateNotificationPreferences:', error);
+      throw error;
+    }
+  }
+
+  // Admin methods
+  async getAllUsers(): Promise<User[]> {
+    try {
+      const response = await fetch(`${API_URL}/users`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch all users');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      throw error;
+    }
+  }
+
+  async activateUser(userId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/activate`, {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to activate user');
+      }
+    } catch (error) {
+      console.error('Error in activateUser:', error);
+      throw error;
+    }
+  }
+
+  async deactivateUser(userId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/deactivate`, {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to deactivate user');
+      }
+    } catch (error) {
+      console.error('Error in deactivateUser:', error);
+      throw error;
+    }
+  }
+
+  // User preferences
+  async getUserPreferences(userId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/preferences`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch user preferences');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getUserPreferences:', error);
+      throw error;
+    }
+  }
+
+  async updateUserPreferences(userId: string, preferences: any): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/preferences`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update user preferences');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in updateUserPreferences:', error);
+      throw error;
+    }
+  }
+
+  // Dashboard methods
+  async getUserDashboard(userId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/users/${userId}/dashboard`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch user dashboard');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getUserDashboard:', error);
+      throw error;
+    }
+  }
+
+  // Student specific methods
+  async getStudentProgress(studentId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/users/students/${studentId}/progress`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch student progress');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getStudentProgress:', error);
+      throw error;
+    }
+  }
+
+  async getEnrolledCourses(studentId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/users/students/${studentId}/courses`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch enrolled courses');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getEnrolledCourses:', error);
       throw error;
     }
   }

@@ -1,6 +1,6 @@
 const notificationService = require('../services/notification.service');
 
-exports.createNotification = async (req, res) => {
+const createNotification = async (req, res) => {
     try {
         const { userId, message } = req.body;
 
@@ -13,4 +13,33 @@ exports.createNotification = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Error creating notification", error: error.message });
     }
+};
+
+
+// Fetch notifications for a user
+const fetchNotifications = async (req, res) => {
+    try {
+      const notifications = await notificationService.fetchNotifications(req.user._id);
+      res.status(200).json({ success: true, data: notifications });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+};
+  
+  // Mark a notification as read
+const markAsRead = async (req, res) => {
+    try {
+      const { notificationId } = req.body; // Expecting notification ID from request body
+  
+      const notification = await notificationService.markAsRead(notificationId);
+      res.status(200).json({ success: true, data: notification });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+};
+  
+module.exports = {
+    createNotification,
+    fetchNotifications,
+    markAsRead,
 };

@@ -1,14 +1,17 @@
+'use client';
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { authService, API_URL } from "../../../services/authService";
 
 interface UserProfile {
-  _id: string;
+  _id?: string;
+  id?: string;
   fullName: string;
   email: string;
   role: 'student' | 'tutor' | 'admin';
-  isActive: boolean;
+  isActive?: boolean;
   department?: string;
   studentId?: string;
   phoneNumber?: string;
@@ -18,7 +21,7 @@ interface UserProfile {
     ip: string;
     device: string;
   }[];
-  preferences: {
+  preferences?: {
     emailNotifications: boolean;
     meetingReminders: boolean;
     messageNotifications: boolean;
@@ -45,31 +48,57 @@ const AvatarDropdown = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem("token");
+        // First, get local user data
+        const localUserData = authService.getUser();
+        if (!localUserData) {
+          setError("No user data available");
+          setLoading(false);
+          return;
+        }
+        
+        // Set profile from local data first
+        const localProfile: UserProfile = {
+          id: localUserData.id,
+          _id: localUserData._id,
+          fullName: localUserData.fullName,
+          email: localUserData.email,
+          role: localUserData.role as 'student' | 'tutor' | 'admin'
+        };
+        setProfile(localProfile);
+        setLoading(false);
+
+        // Only try to fetch detailed profile if we have a token
+        const token = authService.getToken();
         if (!token) {
-          router.push('/tutor/login');
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/v1/users/profile', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setProfile(response.data.data);
+        // Try to get more detailed profile from API
+        try {
+          const response = await axios.get(`${API_URL}/users/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data && response.data.data) {
+            setProfile(response.data.data);
+          }
+        } catch (apiError) {
+          console.error("Error fetching detailed profile:", apiError);
+          // Keep using local profile data, don't redirect
+        }
       } catch (err) {
-        console.error("Error fetching profile:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch profile");
-      } finally {
-        setLoading(false);
+        console.error("Error in profile handling:", err);
+        setError(err instanceof Error ? err.message : "Failed to load profile");
       }
     };
 
     fetchProfile();
-  }, [router]);
+  }, []);
 
   // Toggle dropdown
   const toggleDropdown = () => setIsOpen(!isOpen);
 
-  // Đóng dropdown khi click bên ngoài
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -81,9 +110,8 @@ const AvatarDropdown = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    router.push('/tutor/login');
+    authService.removeToken();
+    window.location.href = '/tutor/login';
   };
 
   if (loading) {
@@ -96,18 +124,35 @@ const AvatarDropdown = () => {
     );
   }
 
+  // Always show avatar with minimal functionality, even if there's an error
   if (error || !profile) {
     return (
       <div className="relative" ref={dropdownRef}>
-        <button className="focus:outline-none">
+        <button onClick={toggleDropdown} className="focus:outline-none">
           <Image
             src="/images/default-avatar.png"
-            alt="Default Avatar"
+            alt="User"
             width={40}
             height={40}
             className="rounded-full cursor-pointer border border-gray-300"
           />
         </button>
+        
+        {isOpen && (
+          <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg p-4 z-50">
+            <div className="text-center border-b pb-3">
+              <p className="text-sm text-gray-600">Limited profile available</p>
+            </div>
+            <div className="border-t pt-3 text-center">
+              <button 
+                onClick={handleLogout}
+                className="text-orange-700 text-sm font-semibold hover:text-orange-900 transition duration-300"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -149,57 +194,23 @@ const AvatarDropdown = () => {
             </div>
           </div>
 
-          {/* Profile Info */}
+          {/* Menu Items */}
           <div className="mt-3 space-y-2">
-            {profile.phoneNumber && (
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="mr-2">📱</span>
-                <span>{profile.phoneNumber}</span>
-              </div>
-            )}
-            {profile.lastLogin && (
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="mr-2">🕒</span>
-                <span>Last login: {new Date(profile.lastLogin).toLocaleDateString()}</span>
-              </div>
-            )}
-            {profile.students && profile.students.length > 0 && (
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="mr-2">👥</span>
-                <span>{profile.students.length} Students</span>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-3 space-y-2">
-            <button 
+            <button
               onClick={() => router.push('/tutor/profile')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded transition duration-300"
             >
-              View Profile
+              Profile Settings
             </button>
-            <button 
-              onClick={() => router.push('/tutor/settings')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
+            <button
+              onClick={() => router.push('/tutor/preferences')}
+              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 rounded transition duration-300"
             >
-              Settings
+              Preferences
             </button>
-            {profile.role === 'tutor' && (
-              <button 
-                onClick={() => router.push('/tutor/students')}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition"
-              >
-                Manage Students
-              </button>
-            )}
-          </div>
-
-          {/* Log out Button */}
-          <div className="border-t pt-3 text-center">
-            <button 
+            <button
               onClick={handleLogout}
-              className="text-orange-700 text-sm font-semibold hover:text-orange-900 transition duration-300"
+              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded transition duration-300"
             >
               Log out
             </button>

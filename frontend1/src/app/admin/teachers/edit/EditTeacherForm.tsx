@@ -3,10 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import styles from './edit.module.css';
+import { userService, UpdateUserData } from '../../../../services/userService';
 
-export default function EditTeacherForm({ tutorId }: { tutorId: string }) {
+interface FormData extends UpdateUserData {
+  role: string;
+}
+
+export default function EditTutorForm({ tutorId }: { tutorId: string }) {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
     password: '',
@@ -15,160 +20,159 @@ export default function EditTeacherForm({ tutorId }: { tutorId: string }) {
     department: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const fetchTeacher = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Unauthorized. Please log in.');
-        return;
-      }
-
+    const fetchTutor = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/users/${tutorId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        setLoading(true);
+        const data = await userService.getUser(tutorId);
+        setFormData({
+          fullName: data.fullName || '',
+          email: data.email || '',
+          password: '',
+          role: data.role || 'tutor',
+          phoneNumber: data.phoneNumber || '',
+          department: data.department || '',
         });
-        if (response.ok) {
-          const data = await response.json();
-          setFormData(data);
-        } else {
-          alert('Failed to fetch teacher details');
-        }
       } catch (error) {
-        console.error('Error fetching teacher:', error);
-        alert('Error fetching teacher');
+        console.error('Error fetching tutor:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch tutor');
+        alert('Error fetching tutor details');
+      } finally {
+        setLoading(false);
       }
     };
 
     if (tutorId) {
-      fetchTeacher();
+      fetchTutor();
     }
   }, [tutorId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveChanges = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Unauthorized. Please log in.');
-      setLoading(false);
-      return;
-    }
-
-    const formDataToSend = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value as string);
-    });
+    setError('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/update-user/${tutorId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
+      // Only send password if it's not empty
+      const updateData: UpdateUserData = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        department: formData.department,
+        ...(formData.password ? { password: formData.password } : {})
+      };
 
-      if (response.ok) {
-        alert('Teacher updated successfully!');
-        router.push('/admin/teachers');
-      } else {
-        const data = await response.json();
-        alert(`Failed to update teacher: ${data.message}`);
-      }
+      await userService.updateUser(tutorId, updateData);
+      alert('Tutor updated successfully!');
+      router.push('/admin/teachers');
     } catch (error) {
-      console.error('Error updating teacher:', error);
-      alert('Error updating teacher');
+      console.error('Error updating tutor:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update tutor');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  return (
-    <div className={styles.editTeacher}>
-      <h1 className={styles.title}>Edit Teacher</h1>
-      <p className={styles.subtitle}>Manually</p>
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
 
-      <form className={styles.form} onSubmit={handleSaveChanges}>
+  return (
+    <div className={styles.editTutor}>
+      <h1 className={styles.title}>Edit Tutor</h1>
+      {error && <p className={styles.error}>{error}</p>}
+      
+      <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.formGroup}>
           <label htmlFor="fullName">Full Name</label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            placeholder="Full Name"
-            className={styles.input}
+          <input 
+            type="text" 
+            id="fullName" 
+            name="fullName" 
             value={formData.fullName}
             onChange={handleChange}
-            required
+            className={styles.input} 
+            required 
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="email">Email address</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="Email address"
-            className={styles.input}
+          <label htmlFor="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
             value={formData.email}
             onChange={handleChange}
-            required
+            className={styles.input} 
+            required 
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Password"
-            className={styles.input}
+          <label htmlFor="password">New Password (optional)</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
             value={formData.password}
             onChange={handleChange}
-            required
+            className={styles.input}
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="phoneNumber">Phone number</label>
-          <input
-            type="tel"
-            id="phoneNumber"
-            name="phoneNumber"
-            placeholder="Phone number"
-            className={styles.input}
+          <label htmlFor="phoneNumber">Phone Number</label>
+          <input 
+            type="tel" 
+            id="phoneNumber" 
+            name="phoneNumber" 
             value={formData.phoneNumber}
             onChange={handleChange}
-            required
+            className={styles.input} 
+            required 
           />
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="department">Department</label>
-          <input
-            type="text"
-            id="department"
-            name="department"
-            placeholder="Department"
-            className={styles.input}
+          <select 
+            id="department" 
+            name="department" 
             value={formData.department}
             onChange={handleChange}
+            className={styles.input} 
             required
-          />
+          >
+            <option value="">Select Department</option>
+            <option value="computer_science">Computer Science</option>
+            <option value="design">Design</option>
+            <option value="business">Business</option>
+            <option value="marketing">Marketing</option>
+          </select>
         </div>
 
         <div className={styles.buttonGroup}>
-          <button type="submit" className={styles.saveButton} disabled={loading}>
+          <button 
+            type="submit" 
+            className={styles.saveButton} 
+            disabled={loading}
+          >
             {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button 
+            type="button" 
+            onClick={() => router.push('/admin/teachers')}
+            className={styles.cancelButton}
+          >
+            Cancel
           </button>
         </div>
       </form>

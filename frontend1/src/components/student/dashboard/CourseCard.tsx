@@ -2,39 +2,13 @@ import { JSX } from "react";
 import { FaHtml5, FaCss3Alt, FaJs, FaPython, FaBootstrap, FaReact } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { authService } from "../../../services/authService";
+import { courseService, Course } from "../../../services/courseService";
 
 interface CourseCardProps {
   course: Course;
   onViewCourse?: (courseId: string) => void;
 }
-
-const categoryIcons: { [key: string]: JSX.Element } = {
-  'Web Development': <FaHtml5 className="text-orange-500 text-4xl" />,
-  'Frontend': <FaCss3Alt className="text-blue-500 text-4xl" />,
-  'JavaScript': <FaJs className="text-yellow-500 text-4xl" />,
-  'Python': <FaPython className="text-green-500 text-4xl" />,
-  'UI/UX': <FaBootstrap className="text-purple-500 text-4xl" />,
-  'React': <FaReact className="text-blue-400 text-4xl" />,
-};
 
 const levelColors = {
   'Beginner': 'bg-green-100 text-green-800',
@@ -49,10 +23,33 @@ const statusColors = {
   'canceled': 'bg-red-100 text-red-800'
 };
 
+const statusLabels = {
+  'not_started': 'Not Started',
+  'ongoing': 'Ongoing',
+  'finished': 'Finished',
+  'canceled': 'Canceled'
+};
+
+const categoryIcons: { [key: string]: JSX.Element } = {
+  'Web Development': <FaHtml5 className="text-orange-500 text-4xl" />,
+  'Frontend': <FaReact className="text-blue-500 text-4xl" />,
+  'JavaScript': <FaJs className="text-yellow-500 text-4xl" />,
+  'Python': <FaPython className="text-green-500 text-4xl" />,
+  'UI/UX': <FaCss3Alt className="text-purple-500 text-4xl" />,
+  'React': <FaReact className="text-blue-500 text-4xl" />,
+  'Bootstrap': <FaBootstrap className="text-purple-700 text-4xl" />
+};
+
 const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
   const router = useRouter();
 
   const handleViewCourse = () => {
+    const token = authService.getToken();
+    if (!token) {
+      router.push("/student/login");
+      return;
+    }
+
     if (onViewCourse) {
       onViewCourse(course._id);
     } else {
@@ -60,31 +57,74 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
     }
   };
 
-  const formatDate = (date?: Date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: Date | undefined | null): string => {
+    if (!date) {
+      return '';
+    }
+
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.error("Invalid Date object provided:", date);
+      return '';
+    }
+
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
 
+  const getProgressColor = () => {
+    switch (course.status) {
+      case 'not_started':
+        return 'bg-gray-200';
+      case 'ongoing':
+        return 'bg-orange-500';
+      case 'finished':
+        return 'bg-green-500';
+      case 'canceled':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-200';
+    }
+  };
+
+  const getProgressWidth = () => {
+    switch (course.status) {
+      case 'not_started':
+        return 'w-0';
+      case 'ongoing':
+        return 'w-1/2';
+      case 'finished':
+        return 'w-full';
+      case 'canceled':
+        return 'w-full';
+      default:
+        return 'w-0';
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      {/* Progress Bar */}
+      <div className="h-1 w-full bg-gray-100">
+        <div className={`h-full ${getProgressWidth()} ${getProgressColor()} transition-all duration-500`} />
+      </div>
+
       {/* Course Header */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            {categoryIcons[course.category] || <FaHtml5 className="text-orange-500 text-4xl" />}
+            {categoryIcons[course.category as string] || <FaHtml5 className="text-orange-500 text-4xl" />}
             <h3 className="font-bold text-gray-800 text-lg line-clamp-1">{course.name}</h3>
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[course.status]}`}>
-            {course.status.replace('_', ' ')}
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[course.status as keyof typeof statusColors]}`}>
+            {statusLabels[course.status as keyof typeof statusLabels]}
+          </span>
+          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${levelColors[course.level as keyof typeof levelColors]}`}>
+            {course.level}
           </span>
         </div>
-        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${levelColors[course.level]}`}>
-          {course.level}
-        </span>
       </div>
 
       {/* Course Content */}
@@ -97,13 +137,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
 
         {course.tutor && (
           <div className="flex items-center space-x-2 mb-3">
-            <div className="relative w-6 h-6">
+            <div className="relative w-8 h-8">
               <Image
                 src={course.tutor.avatar || "/default-avatar.jpg"}
                 alt={course.tutor.fullName}
                 fill
                 className="rounded-full object-cover"
-                sizes="24px"
+                sizes="32px"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/default-avatar.jpg";
+                }}
               />
             </div>
             <span className="text-sm text-gray-600">

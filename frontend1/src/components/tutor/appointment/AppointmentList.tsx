@@ -1,26 +1,8 @@
-"use client";
+'use client';
 import React, { useState, useEffect } from "react";
 import { FaVideo, FaClock, FaUser, FaCalendarAlt } from "react-icons/fa";
-import axios from "axios";
-
-interface Appointment {
-  _id: string;
-  student: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  course: {
-    _id: string;
-    name: string;
-  };
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
-  meetingLink?: string;
-  notes?: string;
-}
+import { Appointment, appointmentService } from "@/services/appointmentService";
+import { authService } from "@/services/authService";
 
 interface AppointmentListProps {
   selectedDate: Date;
@@ -37,28 +19,20 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
 
   const fetchAppointments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const tutorId = localStorage.getItem('userId');
-      
-      if (!token || !tutorId) {
-        throw new Error('Authentication required');
-      }
+      const user = authService.getUser();
+      if (!user || user.role !== 'tutor') throw new Error('Missing tutor user');
 
+      const allAppointments = await appointmentService.getAppointmentsByTutor(user._id);
       const formattedDate = selectedDate.toISOString().split('T')[0];
-      const response = await axios.get(`http://localhost:5000/api/appointments/tutor/${tutorId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        params: {
-          date: formattedDate
-        }
-      });
+      const filtered = allAppointments.filter(
+        (appt) => appt.date.split('T')[0] === formattedDate
+      );
 
-      setAppointments(response.data);
+      setAppointments(filtered);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch appointments');
       console.error('Error fetching appointments:', err);
+      setError('Không thể tải danh sách lịch hẹn');
     } finally {
       setLoading(false);
     }
@@ -66,16 +40,11 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'ongoing':
-        return 'bg-green-100 text-green-800';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -88,9 +57,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
   };
 
   const handleJoinMeeting = (meetingLink: string) => {
-    if (meetingLink) {
-      window.open(meetingLink, '_blank');
-    }
+    if (meetingLink) window.open(meetingLink, '_blank');
   };
 
   if (loading) {
@@ -111,7 +78,6 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md">
-      {/* Date Filter */}
       <div className="p-4 border-b">
         <div className="flex items-center space-x-2">
           <FaCalendarAlt className="text-orange-500" />
@@ -120,19 +86,16 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
             value={selectedDate.toISOString().split('T')[0]}
             onChange={(e) => {
               const newDate = new Date(e.target.value);
-              // Update the selectedDate state
+              // Nếu selectedDate đến từ cha, bạn nên sử dụng callback để cập nhật
             }}
             className="border rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
       </div>
 
-      {/* Appointments List */}
       <div className="divide-y">
         {appointments.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            No appointments for this date
-          </div>
+          <div className="p-4 text-center text-gray-500">Không có lịch hẹn nào cho ngày này</div>
         ) : (
           appointments.map((appointment) => (
             <div key={appointment._id} className="p-4 hover:bg-gray-50">
@@ -140,29 +103,29 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <FaUser className="text-orange-500" />
-                    <span className="font-medium text-gray-800">
-                      {appointment.student.fullName}
-                    </span>
+                    <div>
+                      {typeof appointment.student === 'string' ? (
+                        <span className="font-medium text-gray-800">Không rõ sinh viên</span>
+                      ) : (
+                        <div className="text-gray-800">
+                          <div className="font-medium">{appointment.student.fullName}</div>
+                          <div className="text-sm text-gray-500">{appointment.student.email}</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <FaClock className="text-orange-500" />
-                    <span>
-                      {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Course: {appointment.course.name}
+                    <span>{formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}</span>
                   </div>
                 </div>
-                
                 <div className="flex items-center space-x-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                     {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                   </span>
-                  
-                  {appointment.status === 'scheduled' && (
+                  {appointment.status === 'confirmed' && appointment.meetingLink && (
                     <button
-                      onClick={() => handleJoinMeeting(appointment.meetingLink || '')}
+                      onClick={() => handleJoinMeeting(appointment.meetingLink!)}
                       className="flex items-center space-x-1 bg-orange-500 text-white px-3 py-1 rounded-md hover:bg-orange-600 transition-colors"
                     >
                       <FaVideo />
@@ -171,10 +134,9 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
                   )}
                 </div>
               </div>
-
               {appointment.notes && (
                 <div className="mt-2 text-sm text-gray-600">
-                  Notes: {appointment.notes}
+                  Ghi chú: {appointment.notes}
                 </div>
               )}
             </div>
@@ -186,4 +148,3 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
 };
 
 export default AppointmentList;
-  

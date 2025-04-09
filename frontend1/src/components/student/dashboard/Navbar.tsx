@@ -28,6 +28,7 @@ const Navbar = () => {
         <InboxDropdown />
         <AvatarDropdown />
       </div>
+      
     </nav>
   );
 };

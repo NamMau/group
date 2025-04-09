@@ -7,7 +7,7 @@ import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, Fa
 const menuItems = [
   { name: "Dashboard", icon: <FaDashcube />, path: "/tutor/dashboard" },
   { name: "My Courses", icon: <FaBook />, path: "/tutor/courses" },
-  { name: "Appointments", icon: <FaCalendarAlt />, path: "/tutor/appointments" },
+  { name: "Appointments", icon: <FaCalendarAlt />, path: "/tutor/appointment" },
   { name: "Documents", icon: <FaFileAlt />, path: "/tutor/documents" },
   { name: "Messages", icon: <FaEnvelope />, path: "/tutor/messages" },
   { name: "Blog", icon: <FaUser />, path: "/tutor/blog" },

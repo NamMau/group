@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './classes.module.css';
-import { authService, API_URL } from '../../../services/authService';
+import { authService } from '../../../services/authService';
+import { classService } from '../../../services/classService';
 
 export default function ClassesTable() {
   const [classes, setClasses] = useState([]);
@@ -13,70 +14,51 @@ export default function ClassesTable() {
   const [error, setError] = useState(null);
   const router = useRouter();
   const classesPerPage = 2;
-  
-  // Lấy danh sách lớp học từ API
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setLoading(true);
-        setError(null);
 
-        if (!authService.isAuthenticated()) {
-          console.log('Not authenticated, redirecting to login');
-          router.push('/admin/login');
-          return;
-        }
+  const fetchClasses = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await fetch(`${API_URL}/classes/get-all-classes`, {
-          method: 'GET',
-          headers: authService.getAuthHeaders(),
-          cache: 'no-store'
-        });
+      if (!authService.isAuthenticated()) {
+        router.push('/admin/login');
+        return;
+      }
 
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Response data:', data);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log('Unauthorized, removing token and redirecting');
-            authService.removeToken();
-            router.push('/admin/login');
-            return;
-          }
-          throw new Error(data.message || 'Failed to fetch classes');
-        }
-
-        // Ensure we're setting an array
-        setClasses(Array.isArray(data) ? data : []);
-      } catch (error) {
+      const classesData = await classService.getAllClasses();
+      setClasses(classesData);
+    } catch (error) {
+      if (error.message === 'Unauthorized') {
+        authService.removeToken();
+        router.push('/admin/login');
+      } else {
         console.error('Error fetching classes:', error);
         setError(error.message || 'Failed to fetch classes');
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchClasses();
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
 
   const totalPages = Math.ceil(classes.length / classesPerPage);
   const startIndex = (currentPage - 1) * classesPerPage;
   const currentClasses = classes.slice(startIndex, startIndex + classesPerPage);
 
   const handleSelectClass = (id) => {
-    if (selectedClasses.includes(id)) {
-      setSelectedClasses(selectedClasses.filter((classId) => classId !== id));
-    } else {
-      setSelectedClasses([...selectedClasses, id]);
-    }
+    setSelectedClasses(prev =>
+      prev.includes(id) ? prev.filter(classId => classId !== id) : [...prev, id]
+    );
   };
 
   const handleSelectAll = () => {
     if (selectedClasses.length === currentClasses.length) {
       setSelectedClasses([]);
     } else {
-      setSelectedClasses(currentClasses.map((classItem) => classItem._id));
+      setSelectedClasses(currentClasses.map(c => c._id));
     }
   };
 
@@ -87,26 +69,15 @@ export default function ClassesTable() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/classes/delete-class/${classId}`, {
-        method: 'DELETE',
-        headers: authService.getAuthHeaders(),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(data.message || 'Failed to delete class');
-      }
-
-      setClasses(classes.filter((classItem) => classItem._id !== classId));
+      await classService.deleteClass(classId);
+      fetchClasses();
     } catch (error) {
-      console.error('Error deleting class:', error);
-      alert(error.message || 'Failed to delete class');
+      if (error.message === 'Unauthorized') {
+        authService.removeToken();
+        router.push('/admin/login');
+      } else {
+        alert(error.message || 'Failed to delete class');
+      }
     }
   };
 
@@ -117,28 +88,26 @@ export default function ClassesTable() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/classes/delete-all-classes`, {
-        method: 'DELETE',
-        headers: authService.getAuthHeaders(),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(data.message || 'Failed to delete all classes');
-      }
-
-      setClasses([]);
+      await classService.deleteAllClasses();
+      fetchClasses();
       setSelectedClasses([]);
     } catch (error) {
-      console.error('Error deleting all classes:', error);
-      alert(error.message || 'Failed to delete all classes');
+      if (error.message === 'Unauthorized') {
+        authService.removeToken();
+        router.push('/admin/login');
+      } else {
+        alert(error.message || 'Failed to delete all classes');
+      }
     }
+  };
+
+  const handleUpdateClass = (classId) => {
+    if (!authService.isAuthenticated()) {
+      router.push('/admin/login');
+      return;
+    }
+
+    router.push(`/admin/classes/edit/${classId}`);
   };
 
   const handlePageChange = (page) => {
@@ -146,6 +115,7 @@ export default function ClassesTable() {
     setSelectedClasses([]);
   };
 
+  // UI Rendering
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
   }
@@ -185,7 +155,10 @@ export default function ClassesTable() {
               <th>
                 <input
                   type="checkbox"
-                  checked={selectedClasses.length === currentClasses.length && currentClasses.length > 0}
+                  checked={
+                    selectedClasses.length === currentClasses.length &&
+                    currentClasses.length > 0
+                  }
                   onChange={handleSelectAll}
                 />
               </th>
@@ -220,8 +193,18 @@ export default function ClassesTable() {
                 <td>{classItem.description}</td>
                 <td>{classItem.quantity}</td>
                 <td>
-                  <button className={styles.editButton}>✏️</button>
-                  <button className={styles.deleteButton} onClick={() => handleDeleteClass(classItem._id)}>🗑️</button>
+                  <button
+                    className={styles.editButton}
+                    onClick={() => handleUpdateClass(classItem._id)}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={() => handleDeleteClass(classItem._id)}
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             ))}
@@ -229,7 +212,9 @@ export default function ClassesTable() {
         </table>
 
         <div className={styles.pagination}>
-          <span>Showing {startIndex + 1}-{Math.min(startIndex + classesPerPage, classes.length)}</span>
+          <span>
+            Showing {startIndex + 1}-{Math.min(startIndex + classesPerPage, classes.length)}
+          </span>
           <div className={styles.pageButtons}>
             {Array.from({ length: totalPages }, (_, index) => (
               <button

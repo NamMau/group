@@ -17,7 +17,7 @@ router.put('/notification-preferences', userController.updateNotificationPrefere
 router.get('/', isAdmin, userController.getAllUsers);
 router.get('/get-students', authenticate, userController.getAllStudents);
 router.get('/get-tutors', authenticate, userController.getAllTutors);
-router.get('/:userId', authenticate, isAdmin, userController.getUserById);
+router.get('/:userId', authenticate, userController.getUserById);
 router.put('/update-user/:userId', authenticate, isAdmin, userController.updateUser);
 router.delete('/delete-user/:userId', authenticate, isAdmin, userController.deleteUser);
 router.post('/:userId/activate', isAdmin, userController.activateUser);

@@ -35,6 +35,9 @@ export default function Header() {
         {pathname === '/admin/course' && (
           <button className={styles.addButton}>Add Course</button>
         )}
+        {pathname === '/admin/meetings' && (
+          <button className={styles.addButton}>Add Meeting</button>
+        )}
       </div>
       <div className={styles.headerActions}>
         <span className={styles.notificationIcon}>🔔</span>

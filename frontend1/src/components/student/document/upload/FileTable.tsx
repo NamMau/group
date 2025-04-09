@@ -13,6 +13,11 @@ const FileTable = ({ courseId }: FileTableProps) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!courseId) {
+      setError("Course ID is missing");
+      setIsLoading(false);
+      return;
+    }
     fetchDocuments();
   }, [courseId]);
 
@@ -21,9 +26,12 @@ const FileTable = ({ courseId }: FileTableProps) => {
       setIsLoading(true);
       setError(null);
       const data = await documentService.getStudentDocuments(courseId);
-      setDocuments(data);
+      // Đảm bảo data trả về là một mảng
+      setDocuments(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError("Failed to load documents");
+      const message =
+        err instanceof Error ? err.message : "Failed to load documents";
+      setError(message);
       console.error("Error fetching documents:", err);
     } finally {
       setIsLoading(false);
@@ -34,10 +42,9 @@ const FileTable = ({ courseId }: FileTableProps) => {
     if (!window.confirm("Are you sure you want to delete this document?")) {
       return;
     }
-
     try {
       await documentService.deleteDocument(documentId);
-      setDocuments(prev => prev.filter(doc => doc._id !== documentId));
+      setDocuments((prev) => prev.filter((doc) => doc._id !== documentId));
     } catch (err) {
       console.error("Error deleting document:", err);
       alert("Failed to delete document");
@@ -46,10 +53,10 @@ const FileTable = ({ courseId }: FileTableProps) => {
 
   const getFileIcon = (fileType: string) => {
     switch (fileType.toLowerCase()) {
-      case 'pdf':
+      case "pdf":
         return <FaFilePdf className="text-red-500" />;
-      case 'doc':
-      case 'docx':
+      case "doc":
+      case "docx":
         return <FaFileWord className="text-blue-500" />;
       default:
         return <FaFileAlt className="text-gray-500" />;
@@ -57,21 +64,21 @@ const FileTable = ({ courseId }: FileTableProps) => {
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -84,18 +91,12 @@ const FileTable = ({ courseId }: FileTableProps) => {
   }
 
   if (error) {
-    return (
-      <div className="text-center text-red-500 py-4">
-        {error}
-      </div>
-    );
+    return <div className="text-center text-red-500 py-4">{error}</div>;
   }
 
   if (documents.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-4">
-        No documents found
-      </div>
+      <div className="text-center text-gray-500 py-4">No documents found</div>
     );
   }
 
@@ -116,7 +117,7 @@ const FileTable = ({ courseId }: FileTableProps) => {
             <tr key={doc._id} className="border-t hover:bg-gray-50">
               <td className="p-2 flex items-center">
                 <span className="mr-2">{getFileIcon(doc.fileType)}</span>
-                <a 
+                <a
                   href={doc.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"

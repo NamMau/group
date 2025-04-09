@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useRef } from "react";
 import { FaTimes, FaPaperclip, FaPaperPlane } from "react-icons/fa";
 import { chatService, Message } from "../../../services/chatService";
@@ -52,7 +53,7 @@ const PopupMessage = ({ isOpen, onClose, user }: PopupMessageProps) => {
 
     try {
       const message = await chatService.sendMessage(user.id, newMessage);
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => [...prev, message as Message]);
       setNewMessage("");
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');

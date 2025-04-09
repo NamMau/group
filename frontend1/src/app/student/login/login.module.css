@@ -49,12 +49,18 @@
   font-size: 1rem;
   color: #111827;
   transition: all 0.2s;
+  background-color: white;
 }
 
 .input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
 }
 
 .input::placeholder {
@@ -64,23 +70,32 @@
 .loginButton {
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background-color: #3b82f6;
+  background-color: #f97316;
   color: white;
   border: none;
   border-radius: 0.375rem;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.loginButton:hover {
-  background-color: #2563eb;
+.loginButton:hover:not(:disabled) {
+  background-color: #ea580c;
 }
 
 .loginButton:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.5);
+}
+
+.loginButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .error {
@@ -90,6 +105,26 @@
   border-radius: 0.375rem;
   font-size: 0.875rem;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.errorClose {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.errorClose:hover {
+  opacity: 1;
 }
 
 .forgotPassword {
@@ -98,12 +133,14 @@
 }
 
 .forgotPassword a {
-  color: #3b82f6;
+  color: #f97316;
   font-size: 0.875rem;
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .forgotPassword a:hover {
+  color: #ea580c;
   text-decoration: underline;
 }
 
@@ -115,12 +152,34 @@
 }
 
 .registerLink a {
-  color: #3b82f6;
+  color: #f97316;
   text-decoration: none;
   font-weight: 500;
   margin-left: 0.25rem;
+  transition: color 0.2s;
 }
 
 .registerLink a:hover {
+  color: #ea580c;
   text-decoration: underline;
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  position: relative;
+  pointer-events: none;
 } 

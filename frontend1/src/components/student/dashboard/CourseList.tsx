@@ -1,27 +1,26 @@
 "use client";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import CourseCard from "./CourseCard";
 import { useRouter } from "next/navigation";
+import { authService } from "../../../services/authService";
+import { courseService, Course as CourseType } from "../../../services/courseService";
+import { userService } from "../../../services/userService";
 
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
+interface Course extends Omit<CourseType, 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> {
+  startDate: Date | null;
+  endDate: Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
+
+const CATEGORIES = [
+  'Web Development',
+  'Frontend',
+  'JavaScript',
+  'Python',
+  'UI/UX',
+  'React'
+];
 
 const CourseList = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -34,30 +33,36 @@ const CourseList = () => {
   });
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          router.push("student/login");
-          return;
-        }
+  const fetchCourses = async () => {
+    try {
+      const token = authService.getToken();
+      const user = authService.getUser();
 
-        const response = await axios.get("http://localhost:5000/api/v1/courses/get-courses", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        setCourses(response.data);
-      } catch (err) {
-        console.error("Error fetching courses:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch courses");
-      } finally {
+      if (!token || !user || !user._id) {
+        setCourses([]);
         setLoading(false);
+        return;
       }
-    };
 
+      const coursesData = await courseService.getUserCourses(user._id);
+      // No need to convert dates here as it's done in courseService
+      setCourses(coursesData);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching courses:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch courses");
+      // Don't clear courses on error to maintain UI state
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCourses();
-  }, [router]);
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchCourses, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredCourses = courses.filter(course => {
     if (filter.status !== 'all' && course.status !== filter.status) return false;
@@ -67,6 +72,11 @@ const CourseList = () => {
   });
 
   const handleViewCourse = (courseId: string) => {
+    const token = authService.getToken();
+    if (!token) {
+      router.push("/student/login");
+      return;
+    }
     router.push(`/student/courses/${courseId}`);
   };
 
@@ -84,10 +94,24 @@ const CourseList = () => {
         <div className="text-red-500 text-xl mb-4">Error loading courses</div>
         <p className="text-gray-600 text-center mb-4">{error}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={fetchCourses}
           className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
         >
           Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
+        <p className="text-gray-500 text-lg mb-4">No courses available</p>
+        <button
+          onClick={fetchCourses}
+          className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+        >
+          Refresh Courses
         </button>
       </div>
     );
@@ -126,12 +150,9 @@ const CourseList = () => {
           className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
         >
           <option value="all">All Categories</option>
-          <option value="Web Development">Web Development</option>
-          <option value="Frontend">Frontend</option>
-          <option value="JavaScript">JavaScript</option>
-          <option value="Python">Python</option>
-          <option value="UI/UX">UI/UX</option>
-          <option value="React">React</option>
+          {CATEGORIES.map(category => (
+            <option key={category} value={category}>{category}</option>
+          ))}
         </select>
       </div>
 
@@ -139,6 +160,12 @@ const CourseList = () => {
       {filteredCourses.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-500 text-lg">No courses found matching your criteria</p>
+          <button
+            onClick={() => setFilter({ status: 'all', level: 'all', category: 'all' })}
+            className="mt-4 px-4 py-2 text-orange-500 hover:text-orange-600 transition-colors"
+          >
+            Clear Filters
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,4 +182,4 @@ const CourseList = () => {
   );
 };
 
-export default CourseList; 
+export default CourseList;

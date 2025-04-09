@@ -7,116 +7,167 @@ body {
   }
   
   .addClass {
-    padding: 40px 20px; /* Tăng padding trên để có thêm không gian */
-    max-width: 800px; /* Tăng chiều rộng để chứa 4 cột */
-    margin: 0 auto;
-    background-color: #fff; /* Nền trắng cho form */
-    border-radius: 8px; /* Bo góc nhẹ */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ */
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .title {
-    font-size: 1.5rem;
+    font-size: 1.875rem;
     font-weight: 600;
-    color: #333;
-    margin-bottom: 30px; /* Tăng khoảng cách dưới */
+    color: #1f2937;
+    margin-bottom: 2rem;
+    text-align: center;
   }
   
   .form {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Tăng khoảng cách giữa các hàng */
-  }
-  
-  .formRowFourColumns {
-    display: flex;
-    gap: 20px; /* Khoảng cách giữa 4 cột */
+    gap: 1.5rem;
   }
   
   .formRow {
-    display: flex;
-    gap: 20px; /* Khoảng cách giữa 2 cột */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .formRowFourColumns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
   }
   
   .formColumn {
-    flex: 1; /* Mỗi cột chiếm 50% chiều rộng */
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Khoảng cách giữa các trường trong cột */
+    gap: 1.5rem;
   }
   
   .formGroup {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Tăng khoảng cách giữa label và input */
-    flex: 1; /* Đảm bảo mỗi trường trong hàng 4 cột chiếm đều không gian */
+    gap: 0.5rem;
   }
   
   .formGroup label {
-    font-size: 0.9rem;
-    color: #333;
-    font-weight: 500; /* Làm đậm nhãn */
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
   }
   
   .input {
-    padding: 12px; /* Tăng padding để input cao hơn */
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    color: #333;
     width: 100%;
-    box-sizing: border-box;
-    background-color: #f9f9f9; /* Nền nhạt cho input */
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: white;
+    font-size: 0.875rem;
+    color: #1f2937;
+    transition: all 0.2s;
   }
   
   .input:focus {
     outline: none;
-    border-color: #3b5998;
-    background-color: #fff; /* Nền trắng khi focus */
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
   }
   
-  /* Tùy chỉnh placeholder */
-  .input::placeholder {
-    color: #999; /* Màu placeholder nhạt hơn */
+  .select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+  
+  .select[multiple] {
+    background-image: none;
+    padding-right: 0.75rem;
+    height: auto;
+    min-height: 120px;
+  }
+  
+  .select option {
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .select option:hover,
+  .select option:focus {
+    background-color: rgba(249, 115, 22, 0.1);
+  }
+  
+  .select option:checked {
+    background-color: #f97316;
+    color: white;
+  }
+  
+  .helperText {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
   }
   
   .buttonGroup {
     display: flex;
-    justify-content: space-between;
-    margin-top: 30px; /* Tăng khoảng cách trên */
-  }
-  
-  .addAnotherButton {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 10px 20px;
-    background-color: transparent; /* Bỏ nền */
-    color: #666;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-  
-  .addAnotherButton:hover {
-    background-color: #f5f7fa; /* Nền nhạt khi hover */
-  }
-  
-  .plusIcon {
-    font-size: 1.2rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
   }
   
   .addClassButton {
-    padding: 10px 20px;
-    background-color: #3b5998; /* Màu xanh dương đậm */
+    padding: 0.75rem 2rem;
+    background-color: #f97316;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 0.375rem;
+    font-weight: 500;
     cursor: pointer;
-    font-size: 0.9rem;
+    transition: all 0.2s;
   }
   
   .addClassButton:hover {
-    background-color: #2a4373; /* Màu đậm hơn khi hover */
+    background-color: #ea580c;
+  }
+  
+  .addClassButton:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.4);
+  }
+  
+  .addClassButton:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+  }
+  
+  .error {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    color: #dc2626;
+    font-size: 0.875rem;
+  }
+  
+  @media (max-width: 768px) {
+    .formRow,
+    .formRowFourColumns {
+      grid-template-columns: 1fr;
+    }
+  
+    .addClass {
+      margin: 1rem;
+      padding: 1rem;
+    }
+  
+    .buttonGroup {
+      justify-content: center;
+    }
   }

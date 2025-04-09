@@ -8,9 +8,16 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      // Thêm thông tin user vào localStorage
+      // if (user) {
+      //   localStorage.setItem('user', JSON.stringify(user));
+      // }
       if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
+        // Đảm bảo có _id cho frontend sử dụng
+        const transformedUser = {
+          ...user,
+          _id: user._id || user.id,
+        };
+        localStorage.setItem('user', JSON.stringify(transformedUser));
       }
     }
   },
@@ -44,25 +51,32 @@ export const authService = {
   isAuthenticated: () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
-      const user = localStorage.getItem('user');
-      return !!token && !!user;
+      return !!token;
     }
     return false;
   },
 
   // Lấy thông tin user
   getUser: () => {
-    if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) return null;
-      try {
-        return JSON.parse(userStr);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        return null;
-      }
+    // try {
+    //   const user = localStorage.getItem("user");
+    //   if (!user) return null;
+    //   return JSON.parse(user);
+    // } catch (error) {
+    //   return null;
+    // }
+    try {
+      const user = localStorage.getItem("user");
+      if (!user) return null;
+      const parsed = JSON.parse(user);
+      // Đảm bảo luôn có _id trong đối tượng user
+      return {
+        ...parsed,
+        _id: parsed._id || parsed.id,
+      };
+    } catch (error) {
+      return null;
     }
-    return null;
   },
 
   // Login
@@ -74,21 +88,14 @@ export const authService = {
       });
 
       const { accessToken, refreshToken, user } = response.data;
-      console.log('Login response:', response.data); // Log để debug
 
-      if (!accessToken || !refreshToken || !user) {
-        throw new Error('Invalid response from server');
-      }
-
-      // Store tokens
+      // Store tokens and user data
       authService.setToken(accessToken, refreshToken, user);
-      console.log('Tokens stored successfully'); // Log để debug
-
       return response.data;
     } catch (error: unknown) {
-      console.error('Login error:', error);
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || 'Login failed');
+        const errorMessage = error.response?.data?.message || 'Login failed';
+        throw new Error(errorMessage);
       }
       throw error;
     }
@@ -121,4 +128,4 @@ export const authService = {
       'Content-Type': 'application/json',
     };
   },
-}; 
+};

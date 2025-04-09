@@ -1,33 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { FaCalendarAlt, FaUserGraduate, FaClock, FaVideo } from "react-icons/fa";
-
-interface Meeting {
-  _id: string;
-  courseId: {
-    _id: string;
-    name: string;
-  };
-  students: string[];
-  tutorId: {
-    _id: string;
-    fullName: string;
-  };
-  date: string;
-  time: string;
-  duration: number;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  meetingLink?: string;
-  notes?: string;
-  cancelledBy?: {
-    _id: string;
-    fullName: string;
-  };
-  cancellationReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { meetingService, Meeting } from "../../../services/meetingService"; // Import meetingService
 
 const ScheduleCard = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -42,13 +16,8 @@ const ScheduleCard = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/meetings/get-schedule', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setMeetings(response.data);
+      const fetchedMeetings = await meetingService.getMeetingSchedule(); // Use meetingService
+      setMeetings(fetchedMeetings);
     } catch (err) {
       setError("Failed to load schedules");
       console.error("Error fetching schedules:", err);
@@ -57,16 +26,30 @@ const ScheduleCard = () => {
     }
   };
 
-  const formatTime = (time: string) => {
-    return time; // Time is already in HH:mm format
+  const formatTime = (time: Date): string => { // Nhận đối tượng Date
+    try {
+      return time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "Invalid Time";
+    }
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+  const formatDate = (date: Date): string => { // Nhận đối tượng Date
+    try {
+      return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -94,7 +77,7 @@ const ScheduleCard = () => {
     return (
       <div className="text-center text-red-500 py-4">
         <p className="text-sm font-semibold">{error}</p>
-        <button 
+        <button
           onClick={fetchMeetings}
           className="mt-2 px-3 py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-sm"
         >
@@ -118,10 +101,10 @@ const ScheduleCard = () => {
         <div key={meeting._id} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="font-bold text-gray-800">{meeting.courseId.name}</h4>
+              <h4 className="font-bold text-gray-800">{meeting.course?.name}</h4>
               <div className="mt-2 flex items-center text-sm text-gray-600">
                 <FaUserGraduate className="mr-2" />
-                <span>{meeting.tutorId.fullName}</span>
+                <span>{meeting.tutor?.fullName}</span>
               </div>
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(meeting.status)}`}>
@@ -132,16 +115,16 @@ const ScheduleCard = () => {
           <div className="mt-2 text-sm text-gray-600">
             <div className="flex items-center">
               <FaCalendarAlt className="mr-2" />
-              <span>{formatDate(meeting.date)}</span>
+              <span>{formatDate(meeting.date)}</span> {/* Gọi với đối tượng Date */}
             </div>
             <div className="flex items-center mt-1">
               <FaClock className="mr-2" />
-              <span>{formatTime(meeting.time)} ({meeting.duration} minutes)</span>
+              <span>{formatTime(meeting.time)} ({meeting.duration} minutes)</span> {/* Gọi với đối tượng Date */}
             </div>
             {meeting.notes && (
               <p className="mt-1 text-gray-500">{meeting.notes}</p>
             )}
-            {meeting.status === 'cancelled' && (
+            {meeting.cancelledBy && meeting.cancellationReason && meeting.status === 'cancelled' && (
               <div className="mt-2 text-red-600 text-sm">
                 <p>Cancelled by: {meeting.cancelledBy?.fullName}</p>
                 <p>Reason: {meeting.cancellationReason}</p>
@@ -150,7 +133,7 @@ const ScheduleCard = () => {
           </div>
 
           {meeting.status === 'scheduled' && meeting.meetingLink && (
-            <button 
+            <button
               onClick={() => window.open(meeting.meetingLink, '_blank')}
               className="mt-3 flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
             >
@@ -165,4 +148,3 @@ const ScheduleCard = () => {
 };
 
 export default ScheduleCard;
-  

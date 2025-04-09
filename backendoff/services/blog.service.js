@@ -5,6 +5,20 @@ const Class = require('../models/class.model');
 const { sendEmail } = require('./email.service');
 
 class BlogService {
+    // Get all blogs from database
+    async getAllBlogs() {
+        try {
+            const blogs = await Blog.find({})
+                .populate('author', 'fullName email')
+                .populate('course', 'name')
+                .sort({ createdAt: -1 });
+            return blogs;
+        } catch (error) {
+            throw new Error('Error fetching blogs: ' + error.message);
+        }
+    };
+
+    
     async createPost(postData) {
         // Validate author
         const author = await User.findById(postData.author);

@@ -1,3 +1,5 @@
+'use client';
+
 import { FaSearch } from "react-icons/fa";
 import AvatarDropdown from "@/components/tutor/dashboard/AvatarDropdown";
 import NotificationDropdown from "@/components/tutor/dashboard/NotificationDropdown";

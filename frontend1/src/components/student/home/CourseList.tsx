@@ -1,26 +1,8 @@
+// CourseList.tsx
 "use client";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { courseService, Course } from "@/services/courseService";
 import CourseCard from "./CourseCard";
-
-interface Course {
-  _id: string;
-  name: string;
-  description?: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  startDate?: Date;
-  endDate?: Date;
-  tutor?: {
-    _id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  students: string[];
-  status: 'not_started' | 'ongoing' | 'finished' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const CourseList = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -35,13 +17,8 @@ const CourseList = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/courses/get-courses', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setCourses(response.data);
+      const fetchedCourses = await courseService.getAllCourses();
+      setCourses(fetchedCourses);
     } catch (err) {
       setError("Failed to load courses");
       console.error("Error fetching courses:", err);
@@ -62,7 +39,7 @@ const CourseList = () => {
     return (
       <div className="text-center text-red-500 py-8">
         <p className="text-lg font-semibold">{error}</p>
-        <button 
+        <button
           onClick={fetchCourses}
           className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
         >
@@ -81,9 +58,11 @@ const CourseList = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4"> {/* Thêm padding và khoảng cách */}
       {courses.map((course) => (
-        <CourseCard key={course._id} course={course} />
+        <div key={course._id} className="max-w-md"> {/* Giới hạn chiều rộng mỗi thẻ */}
+          <CourseCard course={course} />
+        </div>
       ))}
     </div>
   );

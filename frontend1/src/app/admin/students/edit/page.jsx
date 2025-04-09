@@ -6,7 +6,7 @@ import styles from './edit.module.css';
 import { userService } from '../../../../services/userService';
 import { authService } from '../../../../services/authService';
 
-export default function EditStudent() {
+export default  function EditStudent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
@@ -26,7 +26,7 @@ export default function EditStudent() {
       if (!studentId) return;
 
       try {
-        const token = authService.getToken();
+        const token = authService.getToken(token);
         if (!token) {
           router.push('/admin/login');
           return;
@@ -76,7 +76,7 @@ export default function EditStudent() {
     setSuccess('');
 
     try {
-      const token = authService.getToken();
+      const token = authService.getToken(token);
       if (!token) {
         router.push('/admin/login');
         return;

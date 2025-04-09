@@ -27,6 +27,7 @@ export default function Sidebar() {
     { href: '/admin/students', icon: '👩‍🎓', label: 'Students' },
     { href: '/admin/classes', icon: '🏫', label: 'Classes' },
     { href: '/admin/course', icon: '📖', label: 'Course' },
+    { href: '/admin/meetings', icon: '📺', label: 'Meetings' },
   ];
 
   return (

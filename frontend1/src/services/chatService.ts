@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authService } from './authService';
 
 const API_URL = 'http://localhost:5000/api/v1';
 
@@ -42,90 +43,143 @@ export interface MessageThread {
 export const chatService = {
   // Get all message threads
   getMessageThreads: async (): Promise<MessageThread[]> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/messages/threads`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    const token = authService.getToken();
+    if (!token) return [];
+
+    try {
+      const response = await axios.get(`${API_URL}/messages/threads`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching message threads:', error);
+      return [];
+    }
   },
 
   // Get conversation with a specific user
   getConversation: async (userId: string): Promise<Message[]> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/messages/conversation/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    const token = authService.getToken();
+    if (!token) return [];
+
+    try {
+      const response = await axios.get(`${API_URL}/messages/conversation/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      return [];
+    }
   },
 
   // Send a message
-  sendMessage: async (recipientId: string, content: string): Promise<Message> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.post(
-      `${API_URL}/messages/send-message/${recipientId}`,
-      { content },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+  sendMessage: async (recipientId: string, content: string): Promise<Message | null> => {
+    const token = authService.getToken();
+    if (!token) return null;
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/messages/send-message/${recipientId}`,
+        { content },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      return null;
+    }
   },
 
   // Get unread messages
   getUnreadMessages: async (): Promise<Message[]> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/messages/get-unread`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    const token = authService.getToken();
+    if (!token) return [];
+
+    try {
+      const response = await axios.get(`${API_URL}/messages/get-unread`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+      return [];
+    }
   },
 
   // Mark message as read
-  markAsRead: async (messageId: string): Promise<Message> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.put(
-      `${API_URL}/messages/markasread/${messageId}/read`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+  markAsRead: async (messageId: string): Promise<Message | null> => {
+    const token = authService.getToken();
+    if (!token) return null;
+
+    try {
+      const response = await axios.put(
+        `${API_URL}/messages/markasread/${messageId}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      return null;
+    }
   },
 
   // Delete message
-  deleteMessage: async (messageId: string): Promise<void> => {
-    const token = localStorage.getItem('accessToken');
-    await axios.delete(`${API_URL}/messages/delete/${messageId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  deleteMessage: async (messageId: string): Promise<boolean> => {
+    const token = authService.getToken();
+    if (!token) return false;
+
+    try {
+      await axios.delete(`${API_URL}/messages/delete/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      return false;
+    }
   },
 
   // Get message statistics for chart
   getMessageStats: async () => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/messages/threads`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    const threads = response.data;
-    const messagesByDate = threads.reduce((acc: any, thread: MessageThread) => {
-      const message = thread.lastMessage;
-      const date = new Date(message.createdAt).toLocaleDateString('en-US', { weekday: 'short' });
-      
-      if (!acc[date]) {
-        acc[date] = { sent: 0, received: 0 };
-      }
-      
-      if (message.sender._id === localStorage.getItem('userId')) {
-        acc[date].sent++;
-      } else {
-        acc[date].received++;
-      }
-      
-      return acc;
-    }, {});
+    const token = authService.getToken();
+    if (!token) return [];
 
-    return Object.entries(messagesByDate).map(([date, stats]: [string, any]) => ({
-      date,
-      sent: stats.sent,
-      received: stats.received
-    }));
+    try {
+      const response = await axios.get(`${API_URL}/messages/threads`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const threads = response.data;
+      const user = authService.getUser();
+      const userId = user?.userId;
+
+      const messagesByDate = threads.reduce((acc: any, thread: MessageThread) => {
+        const message = thread.lastMessage;
+        const date = new Date(message.createdAt).toLocaleDateString('en-US', { weekday: 'short' });
+        
+        if (!acc[date]) {
+          acc[date] = { sent: 0, received: 0 };
+        }
+        
+        if (message.sender._id === userId) {
+          acc[date].sent++;
+        } else {
+          acc[date].received++;
+        }
+        
+        return acc;
+      }, {});
+
+      return Object.entries(messagesByDate).map(([date, stats]: [string, any]) => ({
+        date,
+        sent: stats.sent,
+        received: stats.received
+      }));
+    } catch (error) {
+      console.error('Error fetching message stats:', error);
+      return [];
+    }
   }
-}; 
+};

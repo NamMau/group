@@ -5,6 +5,8 @@ import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
 import DocumentStatus from "@/components/student/document/submit/DocumentStatus";
 import SubmitDocumentButton from "@/components/student/document/submit/SubmitButton";
+import { documentService } from "@/services/documentService"; // Import documentService
+import { authService } from "@/services/authService"; // Import authService
 
 const DocumentDetailPage = () => {
   const [document, setDocument] = useState(null);
@@ -12,6 +14,7 @@ const DocumentDetailPage = () => {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const courseId = searchParams.get("courseId");
   const documentId = searchParams.get("documentId");
 
   useEffect(() => {
@@ -21,22 +24,16 @@ const DocumentDetailPage = () => {
           throw new Error("Document ID is missing");
         }
 
-        const token = localStorage.getItem("token");
+        const token = authService.getToken();  // Lấy token từ authService
         if (!token) {
           router.push("/student/login");
           return;
         }
 
-        const response = await fetch(`http://localhost:5000/api/v1/documents/get-document/${documentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Sử dụng documentService để lấy tài liệu
+        const documentData = await documentService.getDocumentById(documentId); // Sử dụng documentService
+        setDocument(documentData);
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch document");
-        }
-
-        setDocument(data.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -70,8 +67,8 @@ const DocumentDetailPage = () => {
               <p className="text-center text-red-500">{error}</p>
             ) : document ? (
               <>
-                <h2 className="text-xl font-bold text-gray-800">Document Submission - {document.courseCode}</h2>
-                <p><strong>Teacher:</strong> {document.teacher}</p>
+                <h2 className="text-xl font-bold text-gray-800">Document Submission - {document.courseId}</h2>
+                <p><strong>Teacher:</strong> {document.uploadedBy}</p>
                 <p><strong>Due Date:</strong> {document.dueDate}</p>
                 {/* Trạng thái nộp bài */}
                 <DocumentStatus dueDate={document.dueDate} />

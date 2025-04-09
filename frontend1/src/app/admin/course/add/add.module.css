@@ -70,8 +70,9 @@ body {
   
   .buttonGroup {
     display: flex;
-    justify-content: space-between;
-    margin-top: 30px; /* Tăng khoảng cách trên */
+    justify-content: flex-end; /* Căn về bên phải */
+    gap: 12px; /* Khoảng cách giữa 2 nút */
+    margin-top: 30px;
   }
   
   .addAnotherButton {
@@ -79,16 +80,17 @@ body {
     align-items: center;
     gap: 5px;
     padding: 10px 20px;
-    background-color: transparent; /* Bỏ nền */
-    color: #666;
-    border: 1px solid #ddd;
+    background-color: #facc15; /* Vàng nhạt */
+    color: #333;
+    border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.9rem;
+    transition: background-color 0.3s;
   }
   
   .addAnotherButton:hover {
-    background-color: #f5f7fa; /* Nền nhạt khi hover */
+    background-color: #eab308; /* Vàng đậm hơn khi hover */
   }
   
   .plusIcon {
@@ -97,14 +99,15 @@ body {
   
   .addCourseButton {
     padding: 10px 20px;
-    background-color: #3b5998; /* Màu xanh dương đậm */
+    background-color: #3b82f6; /* Xanh nước biển */
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.9rem;
+    transition: background-color 0.3s;
   }
   
   .addCourseButton:hover {
-    background-color: #2a4373; /* Màu đậm hơn khi hover */
+    background-color: #2563eb; /* Xanh đậm hơn khi hover */
   }

@@ -48,6 +48,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Link href="/admin/course" className={pathname === '/admin/course' ? styles.navItemActive : styles.navItem}>
             <span className={styles.icon}>📖</span> Course
           </Link>
+          <Link href="/admin/meetings" className={pathname === '/admin/meetings' ? styles.navItemActive : styles.navItem}>
+            <span className={styles.icon}>📺</span> Meetings
+          </Link>
         </nav>
       </div>
 
@@ -57,7 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className={styles.header}>
           <div className={styles.headerButtons}>
             <button className={styles.exportButton}>Export CSV</button>
-            {['/admin/teachers', '/admin/students', '/admin/classes', '/admin/course'].includes(pathname) && (
+            {['/admin/teachers', '/admin/students', '/admin/classes', '/admin/course', '/admin/meetings'].includes(pathname) && (
               <Link href={`${pathname}/add`}>
                 <button className={styles.addButton}>Add {pathname.split('/').pop()}</button>
               </Link>

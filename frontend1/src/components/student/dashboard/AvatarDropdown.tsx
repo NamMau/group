@@ -1,20 +1,19 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import axios from "axios";
 import { FiSettings, FiBell, FiBookmark, FiHelpCircle, FiLogOut } from "react-icons/fi";
-
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar?: string;
-  role: string;
-}
+import { authService } from '../../../services/authService';
+import { userService, User } from '../../../services/userService';
 
 const useUserData = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const userData = authService.getUser();
+      return userData || null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -22,36 +21,33 @@ const useUserData = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setError("No authentication token found");
-          router.push("student/login");
+        const token = authService.getToken();
+        const refreshToken = authService.getRefreshToken();
+        if (!token || !refreshToken) {
+          setLoading(false);
           return;
         }
 
-        const userId = localStorage.getItem("userId");
+        const userId = user?._id;
         if (!userId) {
-          setError("No user ID found");
-          router.push("student/login");
+          setLoading(false);
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/v1/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        setUser(response.data);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setError(error instanceof Error ? error.message : "Failed to fetch user data");
-        router.push("/login");
+        const fetchedUser = await userService.getUser(userId);
+        setUser(fetchedUser);
+        authService.setToken(token, refreshToken, fetchedUser);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch user data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [router]);
+  }, [user?._id]);
 
   return { user, loading, error };
 };
@@ -59,7 +55,7 @@ const useUserData = () => {
 const AvatarDropdown = () => {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { user, loading, error } = useUserData();
+  const { user, loading } = useUserData();
   const router = useRouter();
 
   const toggleDropdown = () => setIsOpen(!isOpen);
@@ -75,9 +71,8 @@ const AvatarDropdown = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    router.push("/login");
+    authService.logout();
+    router.push("/student/login");
   };
 
   const handleNavigation = (path: string) => {
@@ -91,53 +86,30 @@ const AvatarDropdown = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-        <span className="text-red-500 text-xs">!</span>
-      </div>
-    );
-  }
-
   if (!user) {
-    return null;
+    return (
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <div className = "w-10 h-10 rounded-full bg-gray-300"></div>
+        </div>
+    );
   }
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Avatar Icon */}
-      <button 
-        onClick={toggleDropdown} 
+      <button
+        onClick={toggleDropdown}
         className="focus:outline-none relative group"
       >
-        <div className="relative w-10 h-10">
-          <Image
-            src={user.avatar || "/default-avatar.jpg"}
-            alt={user.fullName}
-            fill
-            className="rounded-full object-cover border border-gray-300 group-hover:border-orange-500 transition duration-300"
-            sizes="40px"
-          />
-        </div>
+        <div className="w-10 h-10 rounded-full bg-gray-300"></div>
       </button>
 
-      {/* Dropdown Menu */}
-      <div 
+      <div
         className={`absolute right-0 mt-2 w-72 bg-white shadow-lg rounded-lg p-4 z-50 transform transition-all duration-200 ease-in-out ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
-        {/* Header - User Info */}
         <div className="flex items-center space-x-3 border-b pb-3">
-          <div className="relative w-12 h-12">
-            <Image
-              src={user.avatar || "/default-avatar.jpg"}
-              alt={user.fullName}
-              fill
-              className="rounded-full object-cover"
-              sizes="48px"
-            />
-          </div>
+          <div className="w-12 h-12 rounded-full bg-gray-300"></div>
           <div>
             <h3 className="font-semibold text-gray-900">{user.fullName}</h3>
             <p className="text-sm text-green-600 capitalize">{user.role}</p>
@@ -145,7 +117,6 @@ const AvatarDropdown = () => {
           </div>
         </div>
 
-        {/* Menu Items */}
         <div className="mt-3 space-y-1">
           <button
             onClick={() => handleNavigation("/student/profile")}
@@ -177,7 +148,6 @@ const AvatarDropdown = () => {
           </button>
         </div>
 
-        {/* Log out Button */}
         <div className="border-t pt-3 mt-3">
           <button
             onClick={handleLogout}

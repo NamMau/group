@@ -1,64 +1,101 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import AppointmentCard from "@/components/student/appointment/AppointmentCard";
 import { FiSearch, FiRefreshCw } from "react-icons/fi";
+import AppointmentCard from "@/components/student/appointment/AppointmentCard";
+import {
+  appointmentService,
+  Appointment as ServiceAppointment,
+} from "@/services/appointmentService";
+import { authService } from "@/services/authService";
 
-interface Appointment {
+// Interface được AppointmentCard sử dụng
+interface CardAppointment {
   _id: string;
   title: string;
   description: string;
-  type: 'online' | 'offline';
-  course: {
-    _id: string;
-    name: string;
-  };
+  type: "online" | "offline";
   tutor: {
     _id: string;
-    name: string;
+    fullName: string;
   };
   student: {
     _id: string;
-    name: string;
+    fullName: string;
   };
   date: string;
   startTime: string;
   endTime: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: "pending" | "confirmed" | "cancelled" | "completed";
   createdAt: string;
   updatedAt: string;
+  location?: string;
+  meetingLink?: string;
+  notes?: string;
 }
 
 const AppointmentList: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<CardAppointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<CardAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Appointment['status'] | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<CardAppointment["status"] | "all">("all");
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-      
-      if (!token || !userData._id) {
-        setError('Please login to view appointments');
+
+      const userData = authService.getUser();
+      const token = authService.getToken();
+
+      if (!token || !userData?._id) {
+        setError("Please login to view appointments");
         return;
       }
 
-      const response = await axios.get(
-        `http://localhost:5000/api/v1/appointments/get-student/${userData._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await appointmentService.getAppointmentsByStudent(userData._id);
 
-      setAppointments(response.data.data);
-      setFilteredAppointments(response.data.data);
+      const transformedAppointments: CardAppointment[] = response.map((app) => {
+        const tutorObj =
+          typeof app.tutor === "string"
+            ? { _id: app.tutor, fullName: "Unknown Tutor" }
+            : {
+                _id: app.tutor._id,
+                fullName: (app.tutor as any).fullName || (app.tutor as any).name || "Unknown Tutor",
+              };
+      
+        const studentObj =
+          typeof app.student === "string"
+            ? { _id: app.student, fullName: "Unknown Student" }
+            : {
+                _id: app.student._id,
+                fullName: (app.student as any).fullName || (app.student as any).name || "Unknown Student",
+              };
+      
+        return {
+          _id: app._id || "",
+          title: app.title,
+          description: app.description || "",
+          type: app.type,
+          tutor: tutorObj,
+          student: studentObj,
+          date: app.date,
+          startTime: app.startTime,
+          endTime: app.endTime,
+          status: app.status,
+          createdAt: app.createdAt || "",
+          updatedAt: app.updatedAt || "",
+          location: app.location,
+          meetingLink: app.meetingLink,
+          notes: app.notes,
+        };
+      });
+      
+
+      setAppointments(transformedAppointments);
+      setFilteredAppointments(transformedAppointments);
     } catch (err: any) {
-      console.error('Error fetching appointments:', err);
-      setError(err.response?.data?.message || 'Failed to fetch appointments');
+      console.error("Error fetching appointments:", err);
+      setError(typeof err === "string" ? err : "Failed to fetch appointments");
     } finally {
       setLoading(false);
     }
@@ -71,22 +108,44 @@ const AppointmentList: React.FC = () => {
   useEffect(() => {
     let filtered = [...appointments];
 
-    // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(appointment => 
-        appointment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.tutor.name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (appointment) =>
+          appointment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          appointment.tutor.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (appointment.location || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(appointment => appointment.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((appointment) => appointment.status === statusFilter);
     }
 
     setFilteredAppointments(filtered);
   }, [searchTerm, statusFilter, appointments]);
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    try {
+      await appointmentService.updateAppointmentStatus(appointmentId, "cancelled");
+      fetchAppointments(); // reload lại list
+    } catch (err) {
+      console.error("Error canceling appointment:", err);
+      setError(typeof err === "string" ? err : "Failed to cancel appointment");
+    }
+  };
+
+  const handleEditAppointment = async (
+    appointmentId: string,
+    newStatus: "pending" | "confirmed" | "cancelled" | "completed"
+  ) => {
+    try {
+      await appointmentService.updateAppointmentStatus(appointmentId, newStatus);
+      fetchAppointments(); // reload lại list
+    } catch (err) {
+      console.error("Error updating appointment:", err);
+      setError(typeof err === "string" ? err : "Failed to update appointment");
+    }
+  };
 
   if (loading) {
     return (
@@ -107,7 +166,7 @@ const AppointmentList: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Filters and Search */}
+      {/* Bộ lọc và tìm kiếm */}
       <div className="flex flex-col md:flex-row gap-4 p-4 bg-white rounded-lg shadow">
         <div className="flex-1">
           <div className="relative">
@@ -123,7 +182,7 @@ const AppointmentList: React.FC = () => {
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as Appointment['status'] | 'all')}
+          onChange={(e) => setStatusFilter(e.target.value as CardAppointment["status"] | "all")}
           className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
         >
           <option value="all">All Status</option>
@@ -136,12 +195,12 @@ const AppointmentList: React.FC = () => {
           onClick={fetchAppointments}
           className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 flex items-center gap-2"
         >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          <FiRefreshCw className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
       </div>
 
-      {/* Appointments Grid */}
+      {/* Danh sách cuộc hẹn */}
       {filteredAppointments.length === 0 ? (
         <div className="p-4 text-center text-gray-500">
           <p>No appointments found</p>
@@ -152,14 +211,10 @@ const AppointmentList: React.FC = () => {
             <AppointmentCard
               key={appointment._id}
               appointment={appointment}
-              onEdit={(appointment) => {
-                // Handle edit
-                console.log('Edit appointment:', appointment);
-              }}
-              onCancel={(appointmentId) => {
-                // Handle cancel
-                console.log('Cancel appointment:', appointmentId);
-              }}
+              onEdit={(appointment, newStatus) =>
+                handleEditAppointment(appointment._id, newStatus)
+              }
+              onCancel={handleCancelAppointment}
             />
           ))}
         </div>

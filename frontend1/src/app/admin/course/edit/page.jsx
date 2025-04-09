@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './edit.module.css';
+import { courseService } from '../../../../services/courseService';
 
 export default function EditCourse() {
   const router = useRouter();
@@ -12,33 +13,39 @@ export default function EditCourse() {
   const [courseData, setCourseData] = useState({
     name: '',
     description: '',
+    category: '',
+    level: '',
+    startDate: '',
+    endDate: '',
+    status: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (courseId) {
-      fetch(`http://localhost:5000/api/v1/courses/${courseId}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && !data.error) {
-            setCourseData({
-              name: data.name || '',
-              description: data.description || '',
-            });
-          } else {
-            setError('Course not found');
-            router.push('/admin/course');
-          }
-        })
-        .catch(() => setError('Failed to fetch course data'))
-        .finally(() => setLoading(false));
+    async function fetchCourseData() {
+      if (courseId) {
+        try {
+          const data = await courseService.getCourse(courseId);
+          setCourseData({
+            name: data.name || '',
+            description: data.description || '',
+            category: data.category || '',
+            level: data.level || '',
+            startDate: data.startDate || '',
+            endDate: data.endDate || '',
+            status: data.status || ''
+          });
+        } catch (err) {
+          setError(err.message);
+          alert('Course not found!');
+          router.push('/admin/course');
+        } finally {
+          setLoading(false);
+        }
+      }
     }
+    fetchCourseData();
   }, [courseId, router]);
 
   const handleInputChange = (e) => {
@@ -52,69 +59,151 @@ export default function EditCourse() {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/courses/update-course/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(courseData),
-      });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Failed to update course');
-
+      await courseService.updateCourse(courseId, courseData);
       alert('Course updated successfully!');
       router.push('/admin/course');
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
+      alert('Error updating course');
     } finally {
       setLoading(false);
     }
   };
 
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.container}>
         <h1 className={styles.title}>Edit Course</h1>
-        <h2 className={styles.subtitle}>MANUALLY</h2>
-
         {error && <p className={styles.error}>{error}</p>}
+        
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="name">Course Name</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              value={courseData.name}
+              onChange={handleInputChange}
+              className={styles.input} 
+              required 
+            />
+          </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="description">Description</label>
+            <textarea 
+              id="description" 
+              name="description" 
+              value={courseData.description}
+              onChange={handleInputChange}
+              className={styles.input} 
+              rows={4} 
+              required 
+            />
+          </div>
+
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label htmlFor="name">Name Course</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={courseData.name}
+              <label htmlFor="category">Category</label>
+              <select 
+                id="category" 
+                name="category" 
+                value={courseData.category}
                 onChange={handleInputChange}
+                className={styles.input} 
                 required
-              />
+              >
+                <option value="">Select Category</option>
+                <option value="programming">Programming</option>
+                <option value="design">Design</option>
+                <option value="business">Business</option>
+                <option value="marketing">Marketing</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="level">Level</label>
+              <select 
+                id="level" 
+                name="level" 
+                value={courseData.level}
+                onChange={handleInputChange}
+                className={styles.input} 
+                required
+              >
+                <option value="">Select Level</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
             </div>
           </div>
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label htmlFor="description">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={courseData.description}
+              <label htmlFor="startDate">Start Date</label>
+              <input 
+                type="date" 
+                id="startDate" 
+                name="startDate" 
+                value={courseData.startDate}
                 onChange={handleInputChange}
-                rows="4"
+                className={styles.input} 
+                required 
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="endDate">End Date</label>
+              <input 
+                type="date" 
+                id="endDate" 
+                name="endDate" 
+                value={courseData.endDate}
+                onChange={handleInputChange}
+                className={styles.input} 
+                required 
               />
             </div>
           </div>
 
-          <div className={styles.actions}>
-            <button type="button" className={styles.addAnother} onClick={() => router.push('/admin/course/add')}>
-              <span className={styles.plusIcon}>+</span> Add another
+          <div className={styles.formGroup}>
+            <label htmlFor="status">Status</label>
+            <select 
+              id="status" 
+              name="status" 
+              value={courseData.status}
+              onChange={handleInputChange}
+              className={styles.input} 
+              required
+            >
+              <option value="">Select Status</option>
+              <option value="not_started">Not Started</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="finished">Finished</option>
+              <option value="canceled">Canceled</option>
+            </select>
+          </div>
+
+          <div className={styles.buttonGroup}>
+            <button 
+              type="submit" 
+              className={styles.saveButton} 
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
             </button>
-            <button type="submit" className={styles.submitButton} disabled={loading}>
-              {loading ? 'Updating...' : 'Update Course'}
+            <button 
+              type="button" 
+              onClick={() => router.push('/admin/course')}
+              className={styles.cancelButton}
+            >
+              Cancel
             </button>
           </div>
         </form>

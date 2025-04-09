@@ -1,13 +1,38 @@
 const CourseService = require('../services/course.service');
 const User = require('../models/user.model');
 const courseService = require('../services/course.service');
+const Course = require('../models/course.model');
 
+// New controller function to get courses by tutor
+exports.getCoursesByTutor = async (req, res) => {
+  try {
+    const tutorId = req.params.tutorId;
+
+    // Check if the tutor exists
+    const tutor = await User.findById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+
+    // Find courses where the tutor is associated (assuming a 'tutor' field in the Course model)
+    const courses = await Course.find({ tutor: tutorId }).populate('tutor');
+
+    res.status(200).json({
+      message: 'Courses fetched successfully',
+      data: courses,
+    });
+  } catch (error) {
+    console.error('Error getting courses by tutor:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 exports.getUserCourses = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const courses = await courseService.getCoursesForUser(userId);
+    // Sửa tên hàm thành getUserCourses
+    const courses = await courseService.getUserCourses(userId);
 
     return res.status(200).json({
       success: true,
@@ -95,23 +120,46 @@ exports.createCourse = async (req, res) => {
   };
 
 // Course enrollment
+// exports.enrollInCourse = async (req, res) => {
+//     try {
+//         const { courseId } = req.params;
+//         const { userId } = req.body;
+//         const enrollment = await courseService.enrollInCourse(courseId, userId);
+//         if (!enrollment) {
+//             return res.status(404).json({ message: 'Course not found.' });
+//         }
+//         res.status(201).json(enrollment);
+//     } catch (error) {
+//         if (error.message === 'User is already enrolled in this course.') {
+//             res.status(400).json({ message: error.message });
+//         } else {
+//             res.status(500).json({ message: error.message });
+//         }
+//     }
+// };
 exports.enrollInCourse = async (req, res) => {
-    try {
-        const { courseId } = req.params;
-        const { userId } = req.body;
-        const enrollment = await courseService.enrollInCourse(courseId, userId);
-        if (!enrollment) {
-            return res.status(404).json({ message: 'Course not found.' });
-        }
-        res.status(201).json(enrollment);
-    } catch (error) {
-        if (error.message === 'User is already enrolled in this course.') {
-            res.status(400).json({ message: error.message });
-        } else {
-            res.status(500).json({ message: error.message });
-        }
+  try {
+    const { courseId } = req.params;
+    const userId = req.user._id;
+    
+    // Log để kiểm tra giá trị đầu vào
+    console.log('Enrolling user:', userId, 'in course:', courseId);
+    
+    const enrollment = await courseService.enrollInCourse(courseId, userId);
+    res.status(201).json(enrollment);
+  } catch (error) {
+    console.error('Enrollment error:', error);
+    
+    if (error.message === 'User is already enrolled in this course.') {
+      return res.status(400).json({ message: error.message });
+    } else if (error.message === 'Course not found.' || error.message === 'Invalid courseId or userId format') {
+      return res.status(404).json({ message: error.message });
+    } else {
+      return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
+  }
 };
+
 exports.bulkEnrollStudents = async (req, res) => {
     try {
       const { courseId } = req.params;
