@@ -29,11 +29,10 @@ export default function MeetingList() {
       setMeetings(data);
 
       // 2. Fetch users data
-      const userIds = new Set([
-        ...data.map(m => m.tutor),
-        ...data.flatMap(m => m.students)
-      ]);
-      console.log('User IDs to fetch:', [...userIds]);
+      const studentIdsFromMeetings = data.flatMap(m => m.students).filter(Boolean);
+      const tutorIdsFromMeetings = data.map(m => m.tutor?._id).filter(Boolean);
+      const allUserIdsToFetch = new Set([...studentIdsFromMeetings, ...tutorIdsFromMeetings]);
+      console.log('User IDs to fetch:', [...allUserIdsToFetch]);
 
       const [studentsData, tutorsData] = await Promise.all([
         userService.getStudents(),
@@ -76,47 +75,29 @@ export default function MeetingList() {
     }
   };
 
-  const formatDateTime = (date: Date, time: Date) => { // Expecting Date objects
+  const formatDateTime = (date: Date, time: Date) => {
     try {
       if (!(date instanceof Date) || isNaN(date.getTime()) || !(time instanceof Date) || isNaN(time.getTime())) {
         return 'Invalid Date';
       }
-
       const combinedDateTime = new Date(date);
       combinedDateTime.setHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), time.getUTCMilliseconds());
-
-      return combinedDateTime.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      return combinedDateTime.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid Date';
     }
   };
 
-  const calculateEndTime = (date: Date, time: Date, duration: number) => { // Expecting Date objects
+  const calculateEndTime = (date: Date, time: Date, duration: number) => {
     try {
       if (!(date instanceof Date) || isNaN(date.getTime()) || !(time instanceof Date) || isNaN(time.getTime())) {
         return 'Invalid Date';
       }
-
       const startDate = new Date(date);
       startDate.setHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), time.getUTCMilliseconds());
-      const endDate = new Date(startDate.getTime() + duration * 60000); // duration in minutes to milliseconds
-
-      return endDate.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      const endDate = new Date(startDate.getTime() + duration * 60000);
+      return endDate.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (error) {
       console.error('Error calculating end time:', error);
       return 'Invalid Date';
@@ -125,23 +106,17 @@ export default function MeetingList() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'scheduled':
-        return styles.statusScheduled;
-      case 'ongoing':
-        return styles.statusOngoing;
-      case 'completed':
-        return styles.statusCompleted;
-      case 'cancelled':
-        return styles.statusCanceled;
-      default:
-        return '';
+      case 'scheduled': return styles.statusScheduled;
+      case 'ongoing': return styles.statusOngoing;
+      case 'completed': return styles.statusCompleted;
+      case 'cancelled': return styles.statusCanceled;
+      default: return '';
     }
   };
 
-  const getTutorName = (tutorId: string) => {
-    const tutor = users[tutorId];
+  const getTutorName = (tutor: { _id: string; fullName: string } | undefined) => {
     if (!tutor) {
-      console.log(`No tutor found for ID: ${tutorId}`);
+      console.log(`No tutor information provided`);
       return 'Unknown Tutor';
     }
     return tutor.fullName;
@@ -206,13 +181,13 @@ export default function MeetingList() {
           <div className={styles.participants}>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Tutor:</span>
-              <span>{getTutorName(meeting.tutor?._id)}</span> {/* Access _id of tutor object */}
+              <span>{getTutorName(meeting.tutor)}</span> {/* Truyền trực tiếp meeting.tutor */}
             </div>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Students:</span>
               <span>{getStudentNames(meeting.students)}</span>
             </div>
-            {meeting.course?._id && ( // Check if course object and _id exist
+            {meeting.course?._id && (
               <div className={styles.detailGroup}>
                 <span className={styles.label}>Course:</span>
                 <span>{getCourseName(meeting.course._id)}</span>

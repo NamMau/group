@@ -77,7 +77,8 @@ const CourseList = () => {
       router.push("/student/login");
       return;
     }
-    router.push(`/student/courses/${courseId}`);
+    //router.push(`/student/courses/${courseId}`);
+    router.push(`/student/mycourse/course/${courseId}`);
   };
 
   if (loading) {

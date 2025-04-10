@@ -10,7 +10,7 @@ const initializeSocket = (server) => {
         }
     });
 
-    // Middleware để xác thực người dùng
+    //Middleware to authenticate socket connection
     io.use((socket, next) => {
         const token = socket.handshake.auth.token;
         if (!token) {
@@ -28,21 +28,19 @@ const initializeSocket = (server) => {
     io.on('connection', (socket) => {
         console.log('User connected:', socket.user.userId);
 
-        // Tham gia vào room của user
         socket.join(`user_${socket.user.userId}`);
 
-        // Xử lý tin nhắn
         socket.on('send_message', async (data) => {
             try {
                 const { receiverId, content } = data;
-                // Lưu tin nhắn vào database
+                //Save message to database
                 const message = await Message.create({
                     sender: socket.user.userId,
                     receiver: receiverId,
                     content
                 });
 
-                // Gửi tin nhắn đến người nhận
+                //Send message to reveiver
                 io.to(`user_${receiverId}`).emit('receive_message', {
                     message,
                     sender: socket.user.userId
@@ -52,20 +50,17 @@ const initializeSocket = (server) => {
             }
         });
 
-        // Xử lý meeting
         socket.on('join_meeting', async (meetingId) => {
             try {
-                // Kiểm tra quyền tham gia meeting
+                //check if meeting exists
                 const meeting = await Meeting.findById(meetingId);
                 if (!meeting) {
                     socket.emit('error', { message: 'Meeting not found' });
                     return;
                 }
 
-                // Tham gia vào room của meeting
                 socket.join(`meeting_${meetingId}`);
 
-                // Thông báo cho các thành viên khác
                 socket.to(`meeting_${meetingId}`).emit('user_joined', {
                     userId: socket.user.userId,
                     timestamp: new Date()
@@ -83,7 +78,6 @@ const initializeSocket = (server) => {
             });
         });
 
-        // Xử lý typing status
         socket.on('typing', (data) => {
             const { receiverId, isTyping } = data;
             io.to(`user_${receiverId}`).emit('user_typing', {
@@ -92,10 +86,8 @@ const initializeSocket = (server) => {
             });
         });
 
-        // Xử lý online status
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.user.userId);
-            // Cập nhật trạng thái offline cho user
             io.emit('user_offline', { userId: socket.user.userId });
         });
     });

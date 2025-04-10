@@ -47,6 +47,7 @@ export const classService = {
       }
 
       const data = await response.json();
+      console.log("Data from API:", data);
       return data.data || [];
     } catch (error) {
       console.error('Error fetching classes:', error);

@@ -10,27 +10,28 @@ import { authService } from '../../../../services/authService';
 import { toast } from 'react-hot-toast';
 
 interface FormData {
-  title: string;
-  description: string;
-  startTime: string;
-  endTime: string;
+  date: string; // yyyy-MM-dd
+  time: string; // HH:mm
+  duration: number;
   tutor: string;
-  student: string;
+  student: string[];
   course?: string;
   meetingLink?: string;
+  notes?: string;
 }
 
 export default function AddMeetingForm() {
   const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
-    title: '',
-    description: '',
-    startTime: '',
-    endTime: '',
+    date: '',
+    time: '',
+    duration: 0,
     tutor: '',
-    student: '',
+    student: [],
     course: '',
-    meetingLink: ''
+    meetingLink: '',
+    notes: ''
   });
 
   const [tutors, setTutors] = useState<any[]>([]);
@@ -41,11 +42,13 @@ export default function AddMeetingForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tutorsData, coursesData] = await Promise.all([
+        const [tutorsData, studentsData, coursesData] = await Promise.all([
           userService.getTutors(),
+          userService.getStudents(),
           courseService.getAllCourses()
         ]);
         setTutors(tutorsData);
+        setStudents(studentsData);
         setCourses(coursesData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -56,32 +59,85 @@ export default function AddMeetingForm() {
     fetchData();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, multiple, options } = e.target as HTMLSelectElement;
+
+    if (multiple) {
+      const selectedValues = Array.from(options)
+        .filter(option => option.selected)
+        .map(option => option.value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: selectedValues
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+  
+    const { date, time, duration, tutor, student, course, meetingLink, notes } = formData;
+  
+    if (!date || !time || !tutor || student.length === 0) {
+      toast.error('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+  
+    if (duration <= 0) {
+      toast.error('Duration must be greater than 0');
+      setLoading(false);
+      return;
+    }
+  
     try {
       const token = authService.getToken();
       if (!token) {
         toast.error('Authentication required');
         return;
       }
-
-      // Format dates to ISO string
+  
+      const dateObj = new Date(date);
+      const [hour, minute] = time.split(':');
+      const timeObj = new Date(date);
+      timeObj.setHours(parseInt(hour), parseInt(minute), 0, 0);
+  
+      const selectedTutor = tutors.find(t => t._id === tutor);
+      if (!selectedTutor) {
+        toast.error('Tutor not found');
+        setLoading(false);
+        return;
+      }
+  
+      const selectedCourse = courses.find(c => c._id === course);
+  
       const meetingData = {
-        ...formData,
-        startTime: new Date(formData.startTime).toISOString(),
-        endTime: new Date(formData.endTime).toISOString(),
+        date: dateObj,
+        time: timeObj,
+        duration: Number(duration),
+        // tutor: {
+        //   _id: selectedTutor._id,
+        //   fullName: selectedTutor.fullName,
+        // },
+        tutorId: selectedTutor._id, 
+        students: student,
+        // course: selectedCourse
+        //   ? { _id: selectedCourse._id, name: selectedCourse.name }
+        //   : undefined,
+        courseId: selectedCourse?._id,
+        meetingLink: meetingLink || undefined,
+        notes: notes || undefined,
+        status: 'scheduled' as 'scheduled'
       };
-
+  
       await meetingService.createMeeting(meetingData);
       toast.success('Meeting created successfully');
       router.push('/admin/meetings');
@@ -92,43 +148,18 @@ export default function AddMeetingForm() {
       setLoading(false);
     }
   };
+  
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.formGroup}>
-        <label htmlFor="title">Title</label>
-        <input
-          type="text"
-          id="title"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          required
-          className={styles.input}
-        />
-      </div>
-
-      <div className={styles.formGroup}>
-        <label htmlFor="description">Description</label>
-        <textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          required
-          className={styles.textarea}
-          rows={4}
-        />
-      </div>
-
       <div className={styles.formRow}>
         <div className={styles.formGroup}>
-          <label htmlFor="startTime">Start Time</label>
+          <label htmlFor="date">Date</label>
           <input
-            type="datetime-local"
-            id="startTime"
-            name="startTime"
-            value={formData.startTime}
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
             onChange={handleChange}
             required
             className={styles.input}
@@ -136,13 +167,27 @@ export default function AddMeetingForm() {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="endTime">End Time</label>
+          <label htmlFor="time">Time</label>
           <input
-            type="datetime-local"
-            id="endTime"
-            name="endTime"
-            value={formData.endTime}
+            type="time"
+            id="time"
+            name="time"
+            value={formData.time}
             onChange={handleChange}
+            required
+            className={styles.input}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="duration">Duration (minutes)</label>
+          <input
+            type="number"
+            id="duration"
+            name="duration"
+            value={formData.duration}
+            onChange={handleChange}
+            min={1}
             required
             className={styles.input}
           />
@@ -162,26 +207,27 @@ export default function AddMeetingForm() {
           <option value="">Select Tutor</option>
           {tutors.map(tutor => (
             <option key={tutor._id} value={tutor._id}>
-              {tutor.name}
+              {tutor.fullName || tutor.email}
             </option>
           ))}
         </select>
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="student">Student</label>
+        <label htmlFor="student">Students</label>
         <select
           id="student"
           name="student"
+          multiple
           value={formData.student}
           onChange={handleChange}
           required
           className={styles.select}
+          size={5}
         >
-          <option value="">Select Student</option>
           {students.map(student => (
             <option key={student._id} value={student._id}>
-              {student.name}
+              {student.fullName || student.email}
             </option>
           ))}
         </select>
@@ -213,8 +259,20 @@ export default function AddMeetingForm() {
           name="meetingLink"
           value={formData.meetingLink}
           onChange={handleChange}
-          placeholder="https://meet.google.com/..."
+          placeholder="https://meet.google.com/mfg-emui-yom"
           className={styles.input}
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="notes">Notes (Optional)</label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          rows={3}
+          className={styles.textarea}
         />
       </div>
 
@@ -229,4 +287,4 @@ export default function AddMeetingForm() {
       </div>
     </form>
   );
-} 
+}

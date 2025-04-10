@@ -6,7 +6,6 @@ import styles from './add.module.css';
 import { userService, Tutor } from '../../../../services/userService';
 import { authService } from '../../../../services/authService';
 import Image from 'next/image';
-import axios from 'axios';
 
 export default function AddStudentForm() {
   const router = useRouter();
@@ -29,29 +28,23 @@ export default function AddStudentForm() {
     const fetchTutors = async () => {
       try {
         setLoading(true);
-        
-        // Check if user is authenticated
+
         if (!authService.isAuthenticated()) {
-          console.log('Not authenticated, redirecting to login');
           router.push('/admin/login');
           return;
         }
 
         const token = authService.getToken();
         if (!token) {
-          console.log('No token found, redirecting to login');
           router.push('/admin/login');
           return;
         }
 
-        console.log('Fetching tutors...');
         const tutorsData = await userService.getTutors();
-        console.log('Fetched tutors:', tutorsData);
         setTutors(tutorsData);
       } catch (err) {
         console.error('Error fetching tutors:', err);
         if (err instanceof Error && err.message.includes('Authentication')) {
-          console.log('Authentication error, redirecting to login');
           router.push('/admin/login');
         } else {
           setError(err instanceof Error ? err.message : 'Failed to fetch tutors');
@@ -71,11 +64,9 @@ export default function AddStudentForm() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Tạo URL cho preview
       const previewUrl = URL.createObjectURL(file);
       setAvatarPreview(previewUrl);
 
-      // Đọc file như base64 string
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({
@@ -93,33 +84,12 @@ export default function AddStudentForm() {
     setSuccess('');
 
     if (!authService.isAuthenticated()) {
-      console.log('Not authenticated, redirecting to login');
-      router.push('/admin/login');
-      return;
-    }
-
-    const token = authService.getToken();
-    if (!token) {
-      console.log('No token found, redirecting to login');
       router.push('/admin/login');
       return;
     }
 
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register/student`,
-        formData,
-        {
-          headers: authService.getAuthHeaders()
-        }
-      );
-
-      if (response.status === 401) {
-        authService.removeToken();
-        router.push('/admin/login');
-        return;
-      }
-
+      await userService.createStudent(formData);
       setSuccess('Student added successfully!');
       setFormData({
         fullName: '',
@@ -132,11 +102,9 @@ export default function AddStudentForm() {
       });
       setAvatarPreview('');
       router.push('/admin/students');
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        setError(error.response?.data?.message || 'Failed to register student');
-      } else if (error instanceof Error) {
-        setError(error.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError('An unexpected error occurred');
       }
@@ -171,9 +139,7 @@ export default function AddStudentForm() {
                   className={styles.avatarImage}
                 />
               ) : (
-                <div className={styles.avatarPlaceholder}>
-                  No image selected
-                </div>
+                <div className={styles.avatarPlaceholder}>No image selected</div>
               )}
             </div>
             <input
@@ -184,40 +150,70 @@ export default function AddStudentForm() {
               onChange={handleAvatarChange}
               className={styles.fileInput}
             />
-            <label htmlFor="avatar" className={styles.fileLabel}>
-              Choose Image
-            </label>
+            <label htmlFor="avatar" className={styles.fileLabel}>Choose Image</label>
           </div>
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="fullName">Full Name</label>
-          <input type="text" id="fullName" name="fullName" value={formData.fullName} onChange={handleChange} required className={styles.input} />
+          <input
+            type="text"
+            id="fullName"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="email">Email</label>
-          <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className={styles.input} />
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="password">Password</label>
-          <input type="password" id="password" name="password" value={formData.password} onChange={handleChange} required className={styles.input} />
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="phoneNumber">Phone Number</label>
-          <input type="tel" id="phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required className={styles.input} />
+          <input
+            type="tel"
+            id="phoneNumber"
+            name="phoneNumber"
+            value={formData.phoneNumber}
+            onChange={handleChange}
+            required
+            className={styles.input}
+          />
         </div>
 
         <div className={styles.formGroup}>
           <label htmlFor="department">Department</label>
-          <select 
-            id="department" 
-            name="department" 
-            value={formData.department} 
-            onChange={handleChange} 
-            required 
+          <select
+            id="department"
+            name="department"
+            value={formData.department}
+            onChange={handleChange}
+            required
             className={styles.input}
           >
             <option value="">Select a department</option>
@@ -231,15 +227,15 @@ export default function AddStudentForm() {
 
         <div className={styles.formGroup}>
           <label htmlFor="personalTutor">Personal Tutor (Optional)</label>
-          <select 
-            id="personalTutor" 
-            name="personalTutor" 
-            value={formData.personalTutor} 
-            onChange={handleChange} 
+          <select
+            id="personalTutor"
+            name="personalTutor"
+            value={formData.personalTutor}
+            onChange={handleChange}
             className={styles.input}
           >
             <option value="">Select a tutor</option>
-            {tutors && tutors.length > 0 ? (
+            {tutors.length > 0 ? (
               tutors.map((tutor) => (
                 <option key={tutor._id} value={tutor._id}>
                   {tutor.fullName} ({tutor.email})
@@ -251,7 +247,9 @@ export default function AddStudentForm() {
           </select>
         </div>
 
-        <button type="submit" className={styles.addStudentButton}>Add Student</button>
+        <button type="submit" className={styles.addStudentButton}>
+          Add Student
+        </button>
       </form>
     </div>
   );

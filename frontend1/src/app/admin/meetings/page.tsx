@@ -10,9 +10,9 @@ export default function MeetingsPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Meetings</h1>
-        <Link href="/admin/meetings/add" className={styles.addButton}>
+        {/* <Link href="/admin/meetings/add" className={styles.addButton}>
           Add New Meeting
-        </Link>
+        </Link> */}
       </div>
       <MeetingList />
     </div>

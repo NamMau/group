@@ -1,4 +1,5 @@
 import { authService, API_URL } from './authService';
+import { userService } from './userService';
 import axios from 'axios';
 
 export interface Course {
@@ -60,6 +61,30 @@ class CourseService {
       return response.data.data;
     } catch (error) {
       console.error('Error getting tutor dashboard:', error);
+      throw error;
+    }
+  }
+
+  async enrollInCourse(courseId: string, studentId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}/enroll/${courseId}`, {
+        method: 'POST',
+        headers: authService.getAuthHeaders(),
+        body: JSON.stringify({ studentId }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to enroll in course');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in enrollInCourse:', error);
       throw error;
     }
   }

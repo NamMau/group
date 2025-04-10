@@ -28,8 +28,8 @@ class CourseService {
     async getUserCourses(userId) {
       try {
         const courses = await Course.find({ students: userId })
-          .populate('tutor', 'fullName') // Populate tutorId (nếu cần)
-          .populate('students', 'fullName'); // Populate students (nếu cần)
+          .populate('tutor', 'fullName') 
+          .populate('students', 'fullName');
         return courses; 
       } catch (error) {
         console.error('Error getting courses for user:', error);
@@ -99,16 +99,16 @@ class CourseService {
       query.enDate = filters.enDate;
     }
     if (filters.search) {
-        query.name = { $regex: filters.search, $options: 'i' }; // Tìm kiếm theo tên
+        query.name = { $regex: filters.search, $options: 'i' };
     }
 
-    console.log("Query filters:", query); // Debug để xem query thực sự được gửi đi
+    console.log("Query filters:", query); 
     const courses= await Course.find(query)
       .populate('tutor', 'fullName email')
       .populate('students', 'fullName email')
       .sort({ createdAt: -1 });
 
-    console.log("Course found", courses); // Debug để xem kết quả tìm kiếm
+    console.log("Course found", courses);
     return courses;
   }
 
@@ -191,7 +191,7 @@ class CourseService {
   // }
   async enrollInCourse(courseId, userId) {
     try {
-      // Kiểm tra cả hai tham số có hợp lệ không
+      //check both if valid
       if (!mongoose.Types.ObjectId.isValid(courseId) || !mongoose.Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid courseId or userId format');
       }
@@ -201,12 +201,12 @@ class CourseService {
         throw new Error('Course not found.');
       }
   
-      // Đảm bảo students là một mảng
+      //make sure students is an array
       if (!Array.isArray(course.students)) {
         course.students = [];
       }
   
-      // Chuyển đổi các ObjectId thành chuỗi để so sánh chính xác
+      
       const studentIds = course.students.map(id => id.toString());
       if (studentIds.includes(userId.toString())) {
         throw new Error('User is already enrolled in this course.');
@@ -215,7 +215,7 @@ class CourseService {
       course.students.push(userId);
       const updatedCourse = await course.save();
       
-      // Log để kiểm tra
+      
       console.log('Updated students array:', updatedCourse.students);
       
       return updatedCourse;
@@ -354,12 +354,12 @@ class CourseService {
       .select('name description startDate endDate students')
       .populate('students', 'fullName email'); // Populate thông tin sinh viên
   
-    // Lấy danh sách duy nhất của sinh viên từ tất cả các khóa học
+    //take only unique students from all courses
     let allStudents = [];
     courses.forEach(course => {
       if (course.students && course.students.length > 0) {
         course.students.forEach(student => {
-          // Kiểm tra sinh viên đã tồn tại trong mảng chưa
+          //check if student is valid
           if (!allStudents.find(s => s._id.toString() === student._id.toString())) {
             allStudents.push(student);
           }
@@ -367,7 +367,6 @@ class CourseService {
       }
     });
   
-    // Các phần còn lại như trước
     const upcomingClasses = await Class.find({
       tutor: tutorId,
       startDate: { $gt: new Date() }
@@ -382,7 +381,7 @@ class CourseService {
   
     return {
       tutor,
-      students: allStudents, // Sử dụng danh sách sinh viên từ các khóa học
+      students: allStudents, //list all student from all courses
       upcomingClasses,
       recentMessages,
       courses

@@ -123,12 +123,6 @@ const StudentDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Your Courses</h2>
-            <button
-              onClick={() => router.push('/student/courses')}
-              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
-              View All Courses
-            </button>
           </div>
           <CourseList /> {/* Assuming CourseList renders the course cards */}
         </div>

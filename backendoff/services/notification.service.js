@@ -1,4 +1,7 @@
-const Notification = require('../models/notification.model');
+// const Notification = require('../models/notification.model');
+
+const NotificationModel = require('../models/notification.model'); // đảm bảo đúng đường dẫn
+const mongoose = require('mongoose');
 
 const createNotification = async (userId, message) => {
   try {

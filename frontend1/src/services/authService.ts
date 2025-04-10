@@ -57,24 +57,36 @@ export const authService = {
   },
 
   // Lấy thông tin user
+  // getUser: () => {
+  //   try {
+  //     const user = localStorage.getItem("user");
+  //     if (!user) return null;
+  //     const parsed = JSON.parse(user);
+  //     // Đảm bảo luôn có _id trong đối tượng user
+  //     return {
+  //       ...parsed,
+  //       _id: parsed._id || parsed.id,
+  //     };
+  //   } catch (error) {
+  //     return null;
+  //   }
+  // },
+
   getUser: () => {
-    // try {
-    //   const user = localStorage.getItem("user");
-    //   if (!user) return null;
-    //   return JSON.parse(user);
-    // } catch (error) {
-    //   return null;
-    // }
     try {
-      const user = localStorage.getItem("user");
-      if (!user) return null;
-      const parsed = JSON.parse(user);
-      // Đảm bảo luôn có _id trong đối tượng user
+      const userString = localStorage.getItem('user');
+      const accessToken = localStorage.getItem('accessToken');
+
+      if (!userString || !accessToken) return null;
+
+      const user = JSON.parse(userString);
+
       return {
-        ...parsed,
-        _id: parsed._id || parsed.id,
+        ...user,
+        token: accessToken,
       };
     } catch (error) {
+      console.error('Error parsing user from localStorage:', error);
       return null;
     }
   },

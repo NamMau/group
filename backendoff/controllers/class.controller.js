@@ -35,21 +35,39 @@ exports.getAllClasses = async (req, res) => {
   try {
     const filter = req.query || {};
     const classes = await classService.getAllClasses(filter);
-    res.json(classes);
+    res.status(200).json({
+      success: true,
+      message: 'Classes retrieved successfully',
+      data: classes,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// exports.getClassById = async (req, res) => {
+//   try {
+//     const { classId } = req.params;
+//     const cls = await classService.getClassById(classId);
+//     res.json(cls);
+//   } catch (error) {
+//     res.status(404).json({ message: error.message });
+//   }
+// };
+
 exports.getClassById = async (req, res) => {
   try {
     const { classId } = req.params;
     const cls = await classService.getClassById(classId);
-    res.json(cls);
+    if (!cls) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+    res.json({ data: cls });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 exports.updateClass = async (req, res) => {
   try {

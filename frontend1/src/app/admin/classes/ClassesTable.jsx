@@ -6,7 +6,7 @@ import styles from './classes.module.css';
 import { authService } from '../../../services/authService';
 import { classService } from '../../../services/classService';
 
-export default function ClassesTable() {
+export default function ClassesTable({searchTerm} ) {
   const [classes, setClasses] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,9 +44,21 @@ export default function ClassesTable() {
     fetchClasses();
   }, [fetchClasses]);
 
-  const totalPages = Math.ceil(classes.length / classesPerPage);
+  useEffect(() => {
+    console.log("classes state:", classes);
+  }, [classes]);
+
+  // const totalPages = Math.ceil(classes.length / classesPerPage);
+  // const startIndex = (currentPage - 1) * classesPerPage;
+  // const currentClasses = classes.slice(startIndex, startIndex + classesPerPage);
+  const filteredClasses = classes.filter(classItem =>
+    classItem.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const totalPages = Math.ceil(filteredClasses.length / classesPerPage);
   const startIndex = (currentPage - 1) * classesPerPage;
-  const currentClasses = classes.slice(startIndex, startIndex + classesPerPage);
+  const currentClasses = filteredClasses.slice(startIndex, startIndex + classesPerPage);
+  
 
   const handleSelectClass = (id) => {
     setSelectedClasses(prev =>
@@ -164,7 +176,6 @@ export default function ClassesTable() {
               </th>
               <th>Name</th>
               <th>Teacher</th>
-              <th>Course</th>
               <th>Description</th>
               <th>Quantity</th>
               <th>Operation</th>
@@ -187,9 +198,9 @@ export default function ClassesTable() {
                     alt="Avatar"
                     className={styles.avatar}
                   />
-                  {classItem.teacherName}
+                  {classItem.tutor.fullName}
                 </td>
-                <td>{classItem.course}</td>
+                {/* <td>{classItem.courses.name}</td> */}
                 <td>{classItem.description}</td>
                 <td>{classItem.quantity}</td>
                 <td>

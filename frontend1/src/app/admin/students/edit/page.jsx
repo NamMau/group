@@ -6,7 +6,7 @@ import styles from './edit.module.css';
 import { userService } from '../../../../services/userService';
 import { authService } from '../../../../services/authService';
 
-export default  function EditStudent() {
+export default function EditStudent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
@@ -25,14 +25,16 @@ export default  function EditStudent() {
     const fetchStudent = async () => {
       if (!studentId) return;
 
-      try {
-        const token = authService.getToken(token);
-        if (!token) {
-          router.push('/admin/login');
-          return;
-        }
+      const user = authService.getUser();
+      const token = user?.token;
 
-        const data = await userService.getStudent(studentId, token);
+      if (!user || !token) {
+        router.push('/admin/login');
+        return;
+      }
+
+      try {
+        const data = await userService.getStudents(studentId, token);
         setStudent({
           fullName: data.fullName || '',
           email: data.email || '',
@@ -75,19 +77,21 @@ export default  function EditStudent() {
     setError('');
     setSuccess('');
 
-    try {
-      const token = authService.getToken(token);
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
+    const user = authService.getUser();
+    const token = user?.token;
 
+    if (!user || !token) {
+      router.push('/admin/login');
+      return;
+    }
+
+    try {
       const studentData = {
         ...student,
-        password: student.password || undefined
+        password: student.password || undefined,
       };
 
-      await userService.updateStudent(studentId, studentData, token);
+      await userService.updateUser(studentId, studentData, token);
       setSuccess('Student updated successfully!');
       setTimeout(() => router.push('/admin/students'), 1000);
     } catch (err) {
@@ -173,7 +177,9 @@ export default  function EditStudent() {
             </div>
           </div>
           <div className={styles.actions}>
-            <button type="submit" className={styles.submitButton}>Update student</button>
+            <button type="submit" className={styles.submitButton}>
+              Update student
+            </button>
           </div>
         </form>
       </div>

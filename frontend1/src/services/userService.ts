@@ -78,11 +78,37 @@ export class UserService {
     }
   }
 
+  async createStudent(studentData: Partial<Student>): Promise<Student> {
+    try {
+      const response = await fetch(`${API_URL}/auth/register/student`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(studentData)
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create tutor');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in createStudent:', error);
+      throw error;
+    }
+  }
+
   async getTutors(): Promise<Tutor[]> {
     try {
       const response = await fetch(`${API_URL}/users/get-tutors`, {
         // headers: this.getHeaders(), 
-        headers: {Authorization: `Bearer ${authService.getToken()}`}
+        headers: {Authorization: `Bearer ${authService.getToken()}`
+      },
+      cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -106,9 +132,12 @@ export class UserService {
   async getStudents(): Promise<Student[]> {
     try {
       const response = await fetch(`${API_URL}/users/get-students`, {
-        headers: this.getHeaders()
+        headers: {
+          Authorization: `Bearer ${authService.getToken()}`
+        },
+        cache: 'no-store'
       });
-
+  
       if (!response.ok) {
         if (response.status === 401) {
           authService.removeToken();
@@ -117,14 +146,14 @@ export class UserService {
         const error = await response.json();
         throw new Error(error.message || 'Failed to fetch students');
       }
-
+  
       const data = await response.json();
       return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
       console.error('Error in getStudents:', error);
       throw error;
     }
-  }
+  }  
 
   async getUser(userId: string): Promise<User> {
     try {

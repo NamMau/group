@@ -1,0 +1,77 @@
+/* courseDetail.module.css */
+
+.container {
+    padding: 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  
+  .title {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .description {
+    font-size: 1em;
+    color: #555;
+    line-height: 1.7;
+    margin-bottom: 30px;
+  }
+  
+  .detailsTable {
+    width: 100%;
+    border-collapse: collapse; /* Gộp đường viền các ô */
+    margin-bottom: 20px;
+  }
+  
+  .detailsTable th,
+  .detailsTable td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  .detailsTable th {
+    font-weight: bold;
+    background-color: #f8f8f8; /* Màu nền cho tiêu đề */
+    width: 150px; /* Điều chỉnh độ rộng cột tiêu đề */
+  }
+  
+  /* Style cho danh sách học viên (nếu có) */
+  .studentsList {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .studentsTitle {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .studentItem {
+    margin-bottom: 5px;
+    color: #666;
+  }
+
+  .enrollButton {
+    background-color: #4CAF50; /* Màu xanh lá cây */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+  }
+  
+  .enrollButton:hover {
+    background-color: #45a049;
+  }
+  
+  /* Thêm các style khác tùy theo nội dung */

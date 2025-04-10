@@ -53,7 +53,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
     if (onViewCourse) {
       onViewCourse(course._id);
     } else {
-      router.push(`/student/courses/${course._id}`);
+      router.push(`/student/mycourse/course/${course._id}`);
     }
   };
 
