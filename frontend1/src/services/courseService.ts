@@ -273,10 +273,18 @@ class CourseService {
     try {
       const response = await fetch(`${API_URL}/courses/delete-course/${courseId}`, {
         method: 'DELETE',
-        headers: authService.getAuthHeaders()
+        headers: {
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
         const error = await response.json();
         throw new Error(error.message || 'Failed to delete course');
       }

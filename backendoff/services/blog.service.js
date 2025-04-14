@@ -136,7 +136,7 @@ class BlogService {
             throw new Error('Unauthorized to delete this post.');
         }
 
-        await post.remove();
+        await Blog.findByIdAndDelete(postId);
         return { message: 'Blog post deleted successfully.' };
     }
 

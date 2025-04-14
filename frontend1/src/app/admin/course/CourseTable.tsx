@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import styles from './course.module.css';
 import { authService } from '../../../services/authService';
 import { courseService, Course } from '../../../services/courseService'; // Import courseService and Course interface
+import { toast } from 'react-hot-toast';
 
 interface CourseTableProps {
   searchTerm?: string;
@@ -125,10 +126,10 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
 
       await courseService.deleteCourse(courseId);
       setCourses(courses.filter((course) => course._id !== courseId));
-      alert('Course deleted successfully!');
+      toast.success('Course deleted successfully!');
     } catch (error) {
       console.error('Error deleting course:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete course');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete course');
     }
   };
 
@@ -144,10 +145,10 @@ export default function CourseTable({ searchTerm = '' }: CourseTableProps) {
       await Promise.all(selectedCourses.map((id) => courseService.deleteCourse(id)));
       setCourses(courses.filter((course) => !selectedCourses.includes(course._id)));
       setSelectedCourses([]);
-      alert('Courses deleted successfully!');
+      toast.success('Courses deleted successfully!');
     } catch (error) {
       console.error('Error deleting courses:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete courses');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete courses');
     }
   };
 

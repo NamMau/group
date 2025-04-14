@@ -12,7 +12,7 @@ router.post('/:courseId/enroll-bulk', authenticate, isAdmin, courseController.bu
 router.post('/create-course', authenticate, isAdmin, courseController.createCourse);
 router.get('/get-courses',  authenticate,courseController.getCourses);
 router.put('/update-course/:courseId', authenticate, isOwnerOrAdmin, courseController.updateCourse);
-router.delete('/delete-course:courseId', authenticate, isOwnerOrAdmin, courseController.deleteCourse);
+router.delete('/delete-course/:courseId', authenticate, isOwnerOrAdmin, courseController.deleteCourse);
 
 router.get("/:userId/courses", courseController.getUserCourses);
 router.get('/:courseId', courseController.getCourseById);

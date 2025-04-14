@@ -156,11 +156,37 @@ export const blogService = {
 
   // Delete post
   deletePost: async (postId: string) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.delete(`${API_URL}/blog/delete-blog/${postId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data.data;
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.delete(`${API_URL}/blog/delete-blog/${postId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.data) {
+        throw new Error('Failed to delete post');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in deletePost:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required');
+        } else if (error.response?.status === 403) {
+          throw new Error('Not authorized to delete this post');
+        } else if (error.response?.status === 404) {
+          throw new Error('Post not found');
+        }
+      }
+      throw error;
+    }
   },
 
   // Search blogs
