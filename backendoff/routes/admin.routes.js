@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller');
-const { authenticate, isAdmin } = require('../middlewares/auth');
+const { authenticate } = require('../middlewares/auth');
 
-// Apply auth and admin middleware to all routes
+// Apply authentication and admin authorization to all routes
 router.use(authenticate);
-router.use(isAdmin);
 
-
+// Dashboard statistics
+router.get('/dashboard-stats', adminController.getDashboardStats);
+router.get('/message-statistics', adminController.getMessageStatistics);
+router.get('/exception-reports', adminController.getExceptionReports);
 
 // Take user
-router.get('/get-all-user', authenticate, adminController.getAllUsers);
+router.get('/get-all-user', adminController.getAllUsers);
 // Dashboard
-router.get('/dashboard-for-admin',isAdmin, adminController.getDashboardStats);
+router.get('/dashboard-for-admin', adminController.getDashboardStats);
 
 // Tutor assignment
 router.post('/assign-tutor', adminController.assignTutorToStudent);

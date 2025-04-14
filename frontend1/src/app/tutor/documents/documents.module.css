@@ -1,0 +1,193 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.courseSelector {
+  margin-bottom: 2rem;
+}
+
+.courseSelector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.documentsList {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.documentCard {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.documentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.documentTitle {
+  font-size: 1.25rem;
+  color: #333;
+  margin: 0;
+}
+
+.documentDate {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.documentDescription {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.documentInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.fileInfo {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.downloadButton {
+  background: #007bff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.downloadButton:hover {
+  background: #0056b3;
+}
+
+.commentsSection {
+  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+}
+
+.commentsSection h4 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.comment {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.commentAuthor {
+  font-weight: 500;
+  color: #333;
+}
+
+.commentDate {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.commentContent {
+  color: #444;
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #dc3545;
+}
+
+.noDocuments {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+.commentForm {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.commentInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.submitButton {
+  background: #28a745;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+  background: #218838;
+}
+
+.submitButton:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+} 

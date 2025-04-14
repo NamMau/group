@@ -1,15 +1,18 @@
 // CourseCard.tsx
 "use client";
+import React from "react";
 import { JSX } from "react";
 import { FaHtml5, FaCss3Alt, FaJs, FaPython, FaBootstrap, FaReact } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authService } from "../../../services/authService";
-import { Course } from "../../../services/courseService"; // Import Course interface
+import { courseService, Course } from "../../../services/courseService";
+import { toast } from "react-hot-toast";
 
 export interface CourseCardProps {
   course: Course;
   onViewCourse?: (courseId: string) => void;
+  onEnrollSuccess?: () => void;
 }
 
 const levelColors = {
@@ -42,7 +45,7 @@ const categoryIcons: { [key: string]: JSX.Element } = {
   'Bootstrap': <FaBootstrap className="text-purple-700 text-4xl" />
 };
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse, onEnrollSuccess }) => {
   const router = useRouter();
 
   const handleViewCourse = () => {
@@ -56,6 +59,28 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onViewCourse }) => {
       onViewCourse(course._id);
     } else {
       router.push(`/student/courses/${course._id}`);
+    }
+  };
+
+  const handleEnroll = async () => {
+    try {
+      const currentUser = await authService.getUser();
+      if (!currentUser) {
+        toast.error("Please login to enroll in this course");
+        return;
+      }
+
+      if (currentUser.role !== "student") {
+        toast.error("Only students can enroll in courses");
+        return;
+      }
+
+      await courseService.enrollInCourse(course._id, currentUser._id);
+      toast.success("Enrolled successfully!");
+      onEnrollSuccess?.();
+    } catch (error: any) {
+      console.error("Enrollment error:", error);
+      toast.error(error.response?.data?.message || "Failed to enroll in course");
     }
   };
 

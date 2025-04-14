@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { meetingService } from '../../../services/meetingService';
 import { userService } from '../../../services/userService';
 import type { User } from '../../../services/userService';
@@ -11,6 +12,7 @@ import styles from './meetings.module.css';
 import type { Meeting } from '../../../services/meetingService';
 
 export default function MeetingList() {
+  const router = useRouter();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<Record<string, User>>({});
   const [courses, setCourses] = useState<Record<string, Course>>({});
@@ -23,65 +25,53 @@ export default function MeetingList() {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      // 1. Fetch meetings
-      const data = await meetingService.getAllMeetings();
-      console.log('Meetings data:', data);
-      setMeetings(data);
-
-      // 2. Fetch users data
-      const studentIdsFromMeetings = data.flatMap(m => m.students).filter(Boolean);
-      const tutorIdsFromMeetings = data.map(m => m.tutor?._id).filter(Boolean);
-      const allUserIdsToFetch = new Set([...studentIdsFromMeetings, ...tutorIdsFromMeetings]);
-      console.log('User IDs to fetch:', [...allUserIdsToFetch]);
-
-      const [studentsData, tutorsData] = await Promise.all([
+      
+      // 1. Fetch all required data in parallel
+      const [meetingsData, studentsData, tutorsData, coursesData] = await Promise.all([
+        meetingService.getAllMeetings(),
         userService.getStudents(),
-        userService.getTutors()
+        userService.getTutors(),
+        courseService.getAllCourses()
       ]);
+
+      console.log('Meetings data:', meetingsData);
       console.log('Students data:', studentsData);
       console.log('Tutors data:', tutorsData);
+      console.log('Courses data:', coursesData);
 
+      // 2. Create users map
       const usersMap = Object.fromEntries(
         [...studentsData, ...tutorsData].map(user => [user._id, user])
       );
       console.log('Users map:', usersMap);
+
+      // 3. Create courses map
+      const coursesMap = Object.fromEntries(
+        coursesData.map(course => [course._id, course])
+      );
+      console.log('Courses map:', coursesMap);
+
+      // 4. Set state
+      setMeetings(meetingsData);
       setUsers(usersMap);
+      setCourses(coursesMap);
 
-      // 3. Fetch courses data
-      const courseIds = new Set(data.map(m => m.course?._id).filter(Boolean)); // Access _id of course object
-      console.log('Course IDs to fetch:', [...courseIds]);
-
-      try {
-        const coursesData = await courseService.getAllCourses();
-        console.log('All courses:', coursesData);
-
-        const filteredCourses = coursesData.filter(course => courseIds.has(course._id));
-        console.log('Filtered courses:', filteredCourses);
-
-        const coursesMap = Object.fromEntries(
-          filteredCourses.map(course => [course._id, course])
-        );
-        console.log('Courses map:', coursesMap);
-        setCourses(coursesMap);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        toast.error('Failed to load course information');
-      }
     } catch (error) {
-      console.error('Error fetching meetings:', error);
-      toast.error('Failed to load meetings');
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load meetings data');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDateTime = (date: Date, time: Date) => {
+  const formatDateTime = (date: Date, time: string) => {
     try {
-      if (!(date instanceof Date) || isNaN(date.getTime()) || !(time instanceof Date) || isNaN(time.getTime())) {
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
         return 'Invalid Date';
       }
+      const [hours, minutes] = time.split(':');
       const combinedDateTime = new Date(date);
-      combinedDateTime.setHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), time.getUTCMilliseconds());
+      combinedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       return combinedDateTime.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -89,13 +79,14 @@ export default function MeetingList() {
     }
   };
 
-  const calculateEndTime = (date: Date, time: Date, duration: number) => {
+  const calculateEndTime = (date: Date, time: string, duration: number) => {
     try {
-      if (!(date instanceof Date) || isNaN(date.getTime()) || !(time instanceof Date) || isNaN(time.getTime())) {
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
         return 'Invalid Date';
       }
+      const [hours, minutes] = time.split(':');
       const startDate = new Date(date);
-      startDate.setHours(time.getUTCHours(), time.getUTCMinutes(), time.getUTCSeconds(), time.getUTCMilliseconds());
+      startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       const endDate = new Date(startDate.getTime() + duration * 60000);
       return endDate.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (error) {
@@ -114,15 +105,18 @@ export default function MeetingList() {
     }
   };
 
-  const getTutorName = (tutor: { _id: string; fullName: string } | undefined) => {
+  const getTutorName = (tutorId: string) => {
+    if (!tutorId) return 'Unknown Tutor';
+    const tutor = users[tutorId];
     if (!tutor) {
-      console.log(`No tutor information provided`);
+      console.log(`No tutor found for ID: ${tutorId}`);
       return 'Unknown Tutor';
     }
     return tutor.fullName;
   };
 
   const getStudentNames = (studentIds: string[]) => {
+    if (!studentIds || studentIds.length === 0) return 'No Students';
     return studentIds
       .map(id => {
         const student = users[id];
@@ -132,16 +126,38 @@ export default function MeetingList() {
         }
         return student.fullName;
       })
-      .join(', ');
+      .filter(name => name !== 'Unknown Student')
+      .join(', ') || 'Unknown Students';
   };
 
   const getCourseName = (courseId: string) => {
+    if (!courseId) return 'Unknown Course';
     const course = courses[courseId];
     if (!course) {
       console.log(`No course found for ID: ${courseId}`);
       return 'Unknown Course';
     }
     return course.name;
+  };
+
+  const handleUpdateMeeting = (meetingId: string) => {
+    if (!meetingId) return;
+    router.push(`/admin/meetings/edit/${meetingId}`);
+  };
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!meetingId) return;
+    if (window.confirm('Are you sure you want to delete this meeting?')) {
+      try {
+        await meetingService.deleteMeeting(meetingId);
+        toast.success('Meeting deleted successfully');
+        // Refresh the meetings list
+        fetchMeetings();
+      } catch (error) {
+        console.error('Error deleting meeting:', error);
+        toast.error('Failed to delete meeting');
+      }
+    }
   };
 
   if (loading) {
@@ -158,19 +174,41 @@ export default function MeetingList() {
         <div key={meeting._id} className={styles.meetingCard}>
           <div className={styles.meetingHeader}>
             <h3 className={styles.meetingTitle}>{meeting.notes || 'Untitled Meeting'}</h3>
-            <span className={`${styles.status} ${getStatusColor(meeting.status)}`}>
-              {meeting.status}
-            </span>
+            <div className={styles.headerActions}>
+              <span className={`${styles.status} ${getStatusColor(meeting.status)}`}>
+                {meeting.status}
+              </span>
+              <div className={styles.actionButtons}>
+                {meeting._id && (
+                  <>
+                    <button
+                      onClick={() => handleUpdateMeeting(meeting._id as string)}
+                      className={styles.editButton}
+                      title="Edit Meeting"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMeeting(meeting._id as string)}
+                      className={styles.deleteButton}
+                      title="Delete Meeting"
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className={styles.meetingDetails}>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Start:</span>
-              <span>{formatDateTime(meeting.date, meeting.time)}</span>
+              <span>{formatDateTime(new Date(meeting.date), meeting.time)}</span>
             </div>
             <div className={styles.detailGroup}>
               <span className={styles.label}>End:</span>
-              <span>{calculateEndTime(meeting.date, meeting.time, meeting.duration)}</span>
+              <span>{calculateEndTime(new Date(meeting.date), meeting.time, meeting.duration)}</span>
             </div>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Duration:</span>
@@ -181,16 +219,16 @@ export default function MeetingList() {
           <div className={styles.participants}>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Tutor:</span>
-              <span>{getTutorName(meeting.tutor)}</span> {/* Truyền trực tiếp meeting.tutor */}
+              <span>{getTutorName(meeting.tutorId)}</span>
             </div>
             <div className={styles.detailGroup}>
               <span className={styles.label}>Students:</span>
               <span>{getStudentNames(meeting.students)}</span>
             </div>
-            {meeting.course?._id && (
+            {meeting.courseId && (
               <div className={styles.detailGroup}>
                 <span className={styles.label}>Course:</span>
-                <span>{getCourseName(meeting.course._id)}</span>
+                <span>{getCourseName(meeting.courseId)}</span>
               </div>
             )}
             {meeting.meetingLink && (

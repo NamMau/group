@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5000/api/v1';
+import { authService, API_URL } from './authService';
 
 export interface Document {
   _id: string;
@@ -28,53 +26,89 @@ export interface Document {
   updatedAt: string;
 }
 
-export const documentService = {
-  // Get document by ID
-  getDocumentById: async (documentId: string) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/documents/get-document/${documentId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data.data;
-  },
+export interface Comment {
+  _id: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  user?: {
+    fullName: string;
+    avatar?: string;
+  };
+}
 
-  // Get student's documents for a course
-  getStudentDocuments: async (courseId: string) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.get(`${API_URL}/documents/get-documents`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data.data;
-  },
+class DocumentService {
+  async getDocumentsByCourse(courseId: string): Promise<Document[]> {
+    try {
+      const response = await fetch(`${API_URL}/documents/course/${courseId}`, {
+        headers: authService.getAuthHeaders()
+      });
 
-  // Upload new document
-  uploadDocument: async (formData: FormData) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.post(`${API_URL}/documents/upload`, formData, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
       }
-    });
-    return response.data.data;
-  },
 
-  // Update document status
-//   updateDocumentStatus: async (documentId: string, status: Document['status']) => {
-//     const token = localStorage.getItem('token');
-//     const response = await axios.patch(`${API_URL}/documents/${documentId}/status`, 
-//       { status },
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
-//     return response.data.data;
-//   },
-
-  // Delete document
-  deleteDocument: async (documentId: string) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.delete(`${API_URL}/documents/delete/${documentId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data.data;
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getDocumentsByCourse:', error);
+      throw error;
+    }
   }
-}; 
+
+  async getDocumentById(documentId: string): Promise<Document> {
+    try {
+      const response = await fetch(`${API_URL}/documents/${documentId}`, {
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch document');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getDocumentById:', error);
+      throw error;
+    }
+  }
+
+  async addComment(documentId: string, content: string): Promise<Comment> {
+    try {
+      const response = await fetch(`${API_URL}/documents/${documentId}/comments`, {
+        method: 'POST',
+        headers: {
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add comment');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in addComment:', error);
+      throw error;
+    }
+  }
+
+  async deleteComment(documentId: string, commentId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/documents/${documentId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Error in deleteComment:', error);
+      throw error;
+    }
+  }
+}
+
+export const documentService = new DocumentService(); 

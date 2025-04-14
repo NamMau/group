@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
 import { studyTimeService, StudyTimeData } from "../../../services/studyTimeService";
 import { authService } from '../../../services/authService';
 
@@ -46,7 +46,6 @@ const TimeSpentChart = ({ userId }: TimeSpentChartProps) => {
   if (loading) {
     return (
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Study Time</h2>
         <div className="flex justify-center items-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
         </div>
@@ -57,7 +56,6 @@ const TimeSpentChart = ({ userId }: TimeSpentChartProps) => {
   if (error) {
     return (
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Study Time</h2>
         <div className="flex justify-center items-center h-[300px] text-red-500">
           {error}
         </div>
@@ -68,7 +66,6 @@ const TimeSpentChart = ({ userId }: TimeSpentChartProps) => {
   if (data.length === 0) {
     return (
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Study Time</h2>
         <div className="flex justify-center items-center h-[300px] text-gray-500">
           No study time data available
         </div>
@@ -78,25 +75,50 @@ const TimeSpentChart = ({ userId }: TimeSpentChartProps) => {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-4">Study Time</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} barSize={30}>
+      <ResponsiveContainer width="100%" height={450}>
+        <BarChart 
+          data={data} 
+          barSize={35}
+          margin={{ top: 20, right: 40, left: 40, bottom: 20 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis 
             dataKey="day" 
-            tick={{ fill: "#4B5563" }}
-            tickFormatter={(value) => value.substring(0, 3)} // Show only first 3 letters of day
+            tick={{ fill: "#4B5563", fontSize: 12 }}
+            tickFormatter={(value) => value.substring(0, 3)}
+            dy={10}
+            height={50}
           />
           <YAxis 
-            tick={{ fill: "#4B5563" }}
-            tickFormatter={(value) => `${value}h`} // Add 'h' suffix to hours
+            tick={{ fill: "#4B5563", fontSize: 12 }}
+            tickFormatter={(value) => `${value}h`}
+            dx={-10}
+            width={50}
           />
           <Tooltip 
-            cursor={{ fill: "#F3F4F6" }}
-            formatter={(value: number) => [`${value} hours`, 'Study Time']}
+            cursor={{ fill: "rgba(243, 244, 246, 0.8)" }}
+            contentStyle={{ 
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+              padding: "8px 12px",
+              fontSize: "12px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+            formatter={(value: number) => [`${value.toFixed(1)} hours`, 'Study Time']}
+            wrapperStyle={{ zIndex: 1000 }}
           />
-          <Bar dataKey="hours" radius={[8, 8, 0, 0]}>
+          <Bar 
+            dataKey="hours" 
+            radius={[8, 8, 0, 0]}
+            animationDuration={1500}
+            animationBegin={0}
+          >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={COLORS[index % COLORS.length]} 
+              />
             ))}
           </Bar>
         </BarChart>

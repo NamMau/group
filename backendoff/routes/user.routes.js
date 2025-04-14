@@ -15,13 +15,14 @@ router.put('/notification-preferences', userController.updateNotificationPrefere
 
 // Admin routes
 router.get('/', isAdmin, userController.getAllUsers);
+router.get('/role/:role', authenticate, userController.getUsersByRole);
 router.get('/get-students', authenticate, userController.getAllStudents);
 router.get('/get-tutors', authenticate, userController.getAllTutors);
 router.get('/:userId', authenticate, userController.getUserById);
 router.put('/update-user/:userId', authenticate, isAdmin, userController.updateUser);
 router.delete('/delete-user/:userId', authenticate, isAdmin, userController.deleteUser);
-router.post('/:userId/activate', isAdmin, userController.activateUser);
-router.post('/:userId/deactivate', isAdmin, userController.deactivateUser);
+router.post('/:userId/activate', authenticate, userController.activateUser);
+router.post('/:userId/deactivate', authenticate, userController.deactivateUser);
 
 // User preferences
 router.get('/:userId/preferences', isOwnerOrAdmin, userController.getUserPreferences);

@@ -23,7 +23,7 @@ const MyCourse = () => {
           <Navbar />
         </div>
 
-        Nội dung chính
+        {/* Main Content Area */}
         <div className="pt-20 px-6 space-y-6 overflow-auto min-h-screen flex gap-6">
           {/* Course List */}
           <div className="flex-1">
@@ -37,11 +37,18 @@ const MyCourse = () => {
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-1/4 p-4 bg-gray-50 shadow-md">
-            <MeetingCard />
-            <h2 className="text-lg font-bold mt-4">Class Schedule</h2>
-            <ScheduleCard />
-            <ScheduleCard />
+          <div className="w-1/4 space-y-6">
+            {/* Upcoming Meetings */}
+            <div className="bg-gray-50 shadow-md p-4 rounded-lg">
+              <h2 className="text-lg font-bold mb-4">Upcoming Meetings</h2>
+              <MeetingCard />
+            </div>
+
+            {/* Class Schedule */}
+            <div className="bg-gray-50 shadow-md p-4 rounded-lg">
+              <h2 className="text-lg font-bold mb-4">Class Schedule</h2>
+              <ScheduleCard />
+            </div>
           </div>
         </div>
       </div>

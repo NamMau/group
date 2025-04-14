@@ -1,50 +1,91 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { FaCalendarAlt, FaUserGraduate, FaClock, FaVideo } from "react-icons/fa";
 import { meetingService, Meeting } from "../../../services/meetingService"; // Import meetingService
+import { userService } from "@/services/userService";
+
+interface Tutor {
+  _id: string;
+  fullName: string;
+  email: string;
+}
 
 const ScheduleCard = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tutors, setTutors] = useState<Record<string, Tutor>>({});
 
   useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        const data = await meetingService.getAllMeetings();
+        setMeetings(data);
+        
+        // Fetch tutor details for each unique tutorId
+        const uniqueTutorIds = [...new Set(data.map(meeting => {
+          // Handle both string and object tutorId
+          if (typeof meeting.tutorId === 'object' && meeting.tutorId !== null) {
+            const tutorObj = meeting.tutorId as { _id: string };
+            return tutorObj._id || (meeting.tutorId as any).toString();
+          }
+          return meeting.tutorId as string;
+        }))];
+        const tutorDetails: Record<string, Tutor> = {};
+        
+        await Promise.all(
+          uniqueTutorIds.map(async (tutorId) => {
+            if (tutorId) {
+              const tutor = await userService.getUser(tutorId);
+              tutorDetails[tutorId] = tutor;
+            }
+          })
+        );
+        
+        setTutors(tutorDetails);
+      } catch (err) {
+        setError("Failed to load meetings");
+        console.error("Error fetching meetings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMeetings();
   }, []);
 
-  const fetchMeetings = async () => {
+  const formatTime = (time: string | Date): string => {
     try {
-      setIsLoading(true);
-      setError(null);
-      const fetchedMeetings = await meetingService.getMeetingSchedule(); // Use meetingService
-      setMeetings(fetchedMeetings);
-    } catch (err) {
-      setError("Failed to load schedules");
-      console.error("Error fetching schedules:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatTime = (time: Date): string => { // Nhận đối tượng Date
-    try {
-      return time.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
+      if (typeof time === "string") {
+        // If time is in HH:mm format
+        if (/^\d{2}:\d{2}$/.test(time)) {
+          const [hours, minutes] = time.split(":");
+          const date = new Date();
+          date.setHours(parseInt(hours, 10));
+          date.setMinutes(parseInt(minutes, 10));
+          return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+        // If time is a date string
+        const date = new Date(time);
+        if (isNaN(date.getTime())) throw new Error("Invalid date string");
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+      // If time is already a Date object
+      return time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } catch (error) {
       console.error("Error formatting time:", error);
       return "Invalid Time";
     }
   };
 
-  const formatDate = (date: Date): string => { // Nhận đối tượng Date
+  const formatDate = (date: string | Date): string => {
     try {
-      return date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
+      const dateObj = typeof date === "string" ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) throw new Error("Invalid date");
+      return dateObj.toLocaleDateString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
       });
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -65,82 +106,44 @@ const ScheduleCard = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    );
+  if (loading) {
+    return <div className="text-center py-4">Loading schedule...</div>;
   }
 
   if (error) {
-    return (
-      <div className="text-center text-red-500 py-4">
-        <p className="text-sm font-semibold">{error}</p>
-        <button
-          onClick={fetchMeetings}
-          className="mt-2 px-3 py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-sm"
-        >
-          Try Again
-        </button>
-      </div>
-    );
+    return <div className="text-red-500 text-center py-4">{error}</div>;
   }
 
   if (meetings.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-gray-500 text-sm">No schedules found</p>
-      </div>
-    );
+    return <div className="text-gray-500 text-center py-4">No scheduled meetings</div>;
   }
 
   return (
     <div className="space-y-4">
       {meetings.map((meeting) => (
-        <div key={meeting._id} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-          <div className="flex items-start justify-between">
+        <div
+          key={meeting._id}
+          className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+        >
+          <div className="flex justify-between items-start mb-2">
             <div>
-              <h4 className="font-bold text-gray-800">{meeting.course?.name}</h4>
-              <div className="mt-2 flex items-center text-sm text-gray-600">
-                <FaUserGraduate className="mr-2" />
-                <span>{meeting.tutor?.fullName}</span>
-              </div>
+              <h3 className="font-semibold text-gray-800">
+                {meeting.notes || "Untitled Meeting"}
+              </h3>
+              <p className="text-sm text-gray-600">
+                with {tutors[meeting.tutorId]?.fullName || "Unknown Tutor"}
+              </p>
             </div>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(meeting.status)}`}>
-              {meeting.status}
-            </span>
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-800">
+                {formatTime(meeting.time)}
+              </p>
+              <p className="text-xs text-gray-600">{formatDate(meeting.date)}</p>
+            </div>
           </div>
-
-          <div className="mt-2 text-sm text-gray-600">
-            <div className="flex items-center">
-              <FaCalendarAlt className="mr-2" />
-              <span>{formatDate(meeting.date)}</span> {/* Gọi với đối tượng Date */}
-            </div>
-            <div className="flex items-center mt-1">
-              <FaClock className="mr-2" />
-              <span>{formatTime(meeting.time)} ({meeting.duration} minutes)</span> {/* Gọi với đối tượng Date */}
-            </div>
-            {meeting.notes && (
-              <p className="mt-1 text-gray-500">{meeting.notes}</p>
-            )}
-            {meeting.cancelledBy && meeting.cancellationReason && meeting.status === 'cancelled' && (
-              <div className="mt-2 text-red-600 text-sm">
-                <p>Cancelled by: {meeting.cancelledBy?.fullName}</p>
-                <p>Reason: {meeting.cancellationReason}</p>
-              </div>
-            )}
+          <div className="text-xs text-gray-500">
+            Duration: {meeting.duration} minutes
           </div>
-
-          {meeting.status === 'scheduled' && meeting.meetingLink && (
-            <button
-              onClick={() => window.open(meeting.meetingLink, '_blank')}
-              className="mt-3 flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
-            >
-              <FaVideo />
-              <span>Join Meeting</span>
-            </button>
-          )}
         </div>
       ))}
     </div>

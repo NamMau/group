@@ -1,5 +1,17 @@
 import { authService } from './authService';
 
+interface Course {
+  _id: string;
+  name: string;
+  description: string;
+}
+
+interface User {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
 // Thêm từ khóa export cho interface Class
 export interface Class {
   _id: string;
@@ -8,11 +20,13 @@ export interface Class {
   startDate: string;
   endDate: string;
   quantity: number;
-  tutor: string;
-  courses: string[];
+  students: User[];
+  tutor: User;
+  courses: Course[];
   status?: 'not_started' | 'ongoing' | 'finished' | 'canceled';
   createdAt: string;
   updatedAt: string;
+  createdBy: User;
 }
 
 interface ClassFormData {

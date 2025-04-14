@@ -1,0 +1,23 @@
+personal finance 
++income
++expense: using AI to scans the bill (OCR)
++wallet: (clothes, ....)
++Dashboard
+
+1. Design System Architecture
+2. UseCase Diagram
+3. Architecture Flows
+4. Wireframes
+5. Sequence diagram
+6. Database schemas
+
+TOtal = income(month) + previos
+
+1. Phân loại giao dịch tự động
+2. Dự đoán xu hướng chi tiêu
+3. Đề xuất ngân sách cá nhân hóa
+4. Cảnh báo tài chính thông minh
+5. Chatbot
+6. Phân tích rủi ro tài chính
+
+mongodb://localhost:27017/personal-finance-management-app

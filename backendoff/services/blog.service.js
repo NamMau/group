@@ -11,6 +11,7 @@ class BlogService {
             const blogs = await Blog.find({})
                 .populate('author', 'fullName email')
                 .populate('course', 'name')
+                .populate('comments.author', 'fullName email')
                 .sort({ createdAt: -1 });
             return blogs;
         } catch (error) {
@@ -82,8 +83,8 @@ class BlogService {
         const post = await Blog.findById(postId)
             .populate('author', 'fullName email')
             .populate('course', 'name')
-            .populate('class', 'name')
-            .populate('comments.author', 'fullName email');
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
 
         if (!post) {
             throw new Error('Blog post not found.');
@@ -152,10 +153,17 @@ class BlogService {
         });
         await post.save();
 
-        // Notify post author
-        await this.notifyComment(post);
+        // Return populated post
+        const populatedPost = await Blog.findById(postId)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
 
-        return post;
+        // Notify post author
+        await this.notifyComment(populatedPost);
+
+        return populatedPost;
     }
 
     async likePost(postId, userId) {
@@ -281,13 +289,68 @@ class BlogService {
 
     async notifyComment(post) {
         const author = await User.findById(post.author);
-        if (author && author.preferences.commentNotifications) {
+        if (author && author.preferences?.commentNotifications) {
             await sendEmail({
                 to: author.email,
                 subject: 'New Comment on Your Blog Post',
                 text: `Your blog post "${post.title}" has received a new comment.`
             });
         }
+    }
+
+    async deleteComment(postId, commentId, userId) {
+        const post = await Blog.findById(postId);
+        if (!post) {
+            throw new Error('Blog post not found.');
+        }
+
+        const comment = post.comments.id(commentId);
+        if (!comment) {
+            throw new Error('Comment not found.');
+        }
+
+        // Check if user is the comment author
+        if (comment.author.toString() !== userId.toString()) {
+            throw new Error('Unauthorized to delete this comment.');
+        }
+
+        // Remove the comment using pull
+        post.comments.pull({ _id: commentId });
+        await post.save();
+
+        // Return populated post
+        const populatedPost = await Blog.findById(postId)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
+
+        return populatedPost;
+    }
+
+    async toggleLike(postId, userId) {
+        const post = await Blog.findById(postId);
+        if (!post) {
+            throw new Error('Blog post not found.');
+        }
+
+        const likeIndex = post.likes.indexOf(userId);
+        if (likeIndex === -1) {
+            post.likes.push(userId);
+        } else {
+            post.likes.splice(likeIndex, 1);
+        }
+
+        await post.save();
+
+        // Return populated post
+        const populatedPost = await Blog.findById(postId)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
+
+        return populatedPost;
     }
 }
 

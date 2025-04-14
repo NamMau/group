@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { FiHeart, FiMessageCircle, FiMoreVertical } from "react-icons/fi";
+import { FiHeart, FiMessageCircle, FiMoreVertical, FiTrash2 } from "react-icons/fi";
 import { useState } from "react";
 import { blogService, BlogPost as BlogPostType } from "../../../services/blogService";
 import { useRouter } from "next/navigation";
@@ -95,7 +95,7 @@ const BlogPost: React.FC<BlogPostProps> = ({
         <div className="flex items-center">
           <Image
             src={post.author.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.fullName)}&background=random`}
-            alt={post.author.fullName}
+            alt={`${post.author.fullName}'s avatar`}
             width={40}
             height={40}
             className="w-10 h-10 rounded-full object-cover"
@@ -112,6 +112,7 @@ const BlogPost: React.FC<BlogPostProps> = ({
             <button
               onClick={() => setShowMenu(!showMenu)}
               className="p-2 hover:bg-gray-100 rounded-full"
+              aria-label="More options"
             >
               <FiMoreVertical className="w-5 h-5 text-gray-500" />
             </button>
@@ -208,17 +209,24 @@ const BlogPost: React.FC<BlogPostProps> = ({
           </button>
         </div>
         {post.comments.map((comment) => (
-          <div key={comment._id} className="mt-2 border-b pb-2">
-            <p className="font-semibold">{comment.author.fullName}</p>
-            <p>{comment.content}</p>
-            {comment.author._id === currentUserId && (
-              <button
-                onClick={() => handleDeleteComment(comment._id)}
-                className="text-red-500 text-sm"
-              >
-                Delete
-              </button>
-            )}
+          <div key={comment._id} className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">{comment.author.fullName}</p>
+                <p className="text-sm text-gray-500">
+                  {new Date(comment.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              {comment.author._id === currentUserId && onDeleteComment && (
+                <button
+                  onClick={() => onDeleteComment(post._id, comment._id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-gray-700">{comment.content}</p>
           </div>
         ))}
       </div>

@@ -2,6 +2,8 @@ const User = require('../models/user.model');
 const Course = require('../models/course.model');
 const Class = require('../models/class.model');
 const { sendEmail } = require('./email.service');
+const Message = require('../models/message.model');
+const mongoose = require('mongoose');
 
 class AdminService {
     async getAllUsers() {
@@ -9,33 +11,29 @@ class AdminService {
     }
 
     async getDashboardStats() {
-        const [
-            totalUsers,
-            totalStudents,
-            totalTutors,
-            totalCourses,
-            totalClasses,
-            recentUsers,
-            recentCourses
-        ] = await Promise.all([
-            User.countDocuments(),
-            User.countDocuments({ role: 'student' }),
-            User.countDocuments({ role: 'tutor' }),
-            Course.countDocuments(),
-            Class.countDocuments(),
-            User.find().sort({ createdAt: -1 }).limit(5),
-            Course.find().sort({ createdAt: -1 }).limit(5)
-        ]);
+        try {
+            const [messageStats, exceptionStats] = await Promise.all([
+                this.getMessageStatistics(),
+                this.getExceptionReports()
+            ]);
 
-        return {
-            totalUsers,
-            totalStudents,
-            totalTutors,
-            totalCourses,
-            totalClasses,
-            recentUsers,
-            recentCourses
-        };
+            return {
+                messageStats: {
+                    last7Days: messageStats.last7Days.map(day => day.count),
+                    averagePerTutor: messageStats.averagePerTutor
+                },
+                exceptionStats: {
+                    studentsWithoutTutor: exceptionStats.studentsWithoutTutor.length,
+                    inactiveStudents: {
+                        sevenDays: exceptionStats.inactiveStudents.sevenDays.length,
+                        twentyEightDays: exceptionStats.inactiveStudents.twentyEightDays.length
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Error in getDashboardStats:', error);
+            throw error;
+        }
     }
 
     async assignTutorToStudent(studentId, tutorId) {
@@ -64,7 +62,6 @@ class AdminService {
 
         // Send notifications
         await this.notifyTutorAssignment(student, tutor);
-
         return { message: 'Tutor assigned successfully.' };
     }
 
@@ -226,6 +223,94 @@ class AdminService {
             attendanceByStudent: {},
             attendanceByTutor: {}
         };
+    }
+
+    async getMessageStatistics() {
+        try {
+            // Get messages from last 7 days
+            const last7Days = await Message.aggregate([
+                {
+                    $match: {
+                        createdAt: {
+                            $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { _id: 1 }
+                }
+            ]);
+
+            // Get average messages per tutor
+            const tutors = await User.find({ role: 'tutor' });
+            const averagePerTutor = await Promise.all(
+                tutors.map(async (tutor) => {
+                    const messageCount = await Message.countDocuments({
+                        $or: [
+                            { sender: tutor._id },
+                            { recipient: tutor._id }
+                        ]
+                    });
+
+                    return {
+                        tutorName: tutor.fullName,
+                        average: messageCount / 7 // Average per day
+                    };
+                })
+            );
+
+            return {
+                last7Days: last7Days.map(day => ({
+                    date: day._id,
+                    count: day.count
+                })),
+                averagePerTutor
+            };
+        } catch (error) {
+            console.error('Error in getMessageStatistics:', error);
+            throw error;
+        }
+    }
+
+    async getExceptionReports() {
+        try {
+            // Find students without tutors
+            const studentsWithoutTutor = await User.find({
+                role: 'student',
+                personalTutor: { $exists: false }
+            }).select('_id fullName');
+
+            // Find inactive students (7 days)
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const inactiveSevenDays = await User.find({
+                role: 'student',
+                lastActivity: { $lt: sevenDaysAgo }
+            }).select('_id fullName lastActivity');
+
+            // Find inactive students (28 days)
+            const twentyEightDaysAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+            const inactiveTwentyEightDays = await User.find({
+                role: 'student',
+                lastActivity: { $lt: twentyEightDaysAgo }
+            }).select('_id fullName lastActivity');
+
+            return {
+                studentsWithoutTutor,
+                inactiveStudents: {
+                    sevenDays: inactiveSevenDays,
+                    twentyEightDays: inactiveTwentyEightDays
+                }
+            };
+        } catch (error) {
+            console.error('Error in getExceptionReports:', error);
+            throw error;
+        }
     }
 }
 

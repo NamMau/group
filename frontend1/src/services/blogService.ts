@@ -115,7 +115,7 @@ export const blogService = {
   toggleLike: async (postId: string) => {
     const token = localStorage.getItem('accessToken');
     const response = await axios.post(
-      `${API_URL}/blogs/like-blog/${postId}/like`,
+      `${API_URL}/blog/like-blog/${postId}/like`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );

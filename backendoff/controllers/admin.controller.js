@@ -40,6 +40,27 @@ exports.getDashboardStats = async (req, res) => {
         const stats = await adminService.getDashboardStats();
         res.json(stats);
     } catch (error) {
+        console.error('Error in getDashboardStats controller:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getMessageStatistics = async (req, res) => {
+    try {
+        const stats = await adminService.getMessageStatistics();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error in getMessageStatistics controller:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getExceptionReports = async (req, res) => {
+    try {
+        const reports = await adminService.getExceptionReports();
+        res.json(reports);
+    } catch (error) {
+        console.error('Error in getExceptionReports controller:', error);
         res.status(500).json({ message: error.message });
     }
 };

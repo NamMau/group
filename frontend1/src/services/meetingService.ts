@@ -1,36 +1,45 @@
 import { authService, API_URL } from './authService';
 
 export interface Meeting {
-  _id: string;
-  course: { _id: string; name: string };
-  students: string[];
-  tutor: { _id: string; fullName: string };
-  date: Date; // Đã chuyển thành Date
-  time: Date; // Đã chuyển thành Date
+  _id?: string;
+  classId: string;
+  courseId: {
+    _id: string;
+    name: string;
+  };
+  students: {
+    _id: string;
+    fullName: string;
+    email: string;
+  }[];
+  tutorId: string;
+  date: Date;
+  time: string;  // HH:mm format
   duration: number;
   status: 'scheduled' | 'completed' | 'cancelled';
   meetingLink?: string;
   notes?: string;
-  cancelledBy?: { _id: string; fullName: string };
+  cancelledBy?: string;
   cancellationReason?: string;
   createdAt?: string;
   updatedAt?: string;
-  formattedDateTime?: string;
 }
 
 class MeetingService {
-  private convertMeetingDates(meeting: any): Meeting {
+  private convertMeetingDates(meeting: any): Meeting | null {
+    if (!meeting) return null;
+    
     return {
       ...meeting,
-      date: meeting.date ? new Date(meeting.date) : null,
-      time: meeting.time ? new Date(`1970-01-01T${meeting.time}Z`) : null, // Giả định time là HH:MM:SS
-      createdAt: meeting.createdAt ? new Date(meeting.createdAt) : null,
-      updatedAt: meeting.updatedAt ? new Date(meeting.updatedAt) : null,
-    } as Meeting;
+      date: new Date(meeting.date),
+      time: meeting.time || '',  // Keep as string HH:mm
+      createdAt: meeting.createdAt || undefined,
+      updatedAt: meeting.updatedAt || undefined,
+    };
   }
 
   private convertMeetingArrayDates(meetings: any[]): Meeting[] {
-    return meetings.map(meeting => this.convertMeetingDates(meeting));
+    return meetings.map(meeting => this.convertMeetingDates(meeting)).filter((meeting): meeting is Meeting => meeting !== null);
   }
 
   async createMeeting(meetingData: Partial<Meeting>): Promise<Meeting> {
@@ -40,22 +49,28 @@ class MeetingService {
         'Content-Type': 'application/json'
       };
 
+      const payload = {
+        classId: meetingData.classId,
+        date: meetingData.date,
+        time: meetingData.time,
+        duration: meetingData.duration,
+      };
+
       const response = await fetch(`${API_URL}/meetings/create-meeting`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(meetingData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create meeting');
+        await this.handleHttpError(response);
       }
 
-      return this.convertMeetingDates(await response.json());
+      const convertedMeeting = this.convertMeetingDates(await response.json());
+      if (!convertedMeeting) {
+        throw new Error('Failed to create meeting: Invalid response data');
+      }
+      return convertedMeeting;
     } catch (error) {
       console.error('Error in createMeeting:', error);
       throw error;
@@ -69,15 +84,14 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch meeting');
+        await this.handleHttpError(response);
       }
 
-      return this.convertMeetingDates(await response.json());
+      const convertedMeeting = this.convertMeetingDates(await response.json());
+      if (!convertedMeeting) {
+        throw new Error('Meeting not found or invalid data');
+      }
+      return convertedMeeting;
     } catch (error) {
       console.error('Error in getMeeting:', error);
       throw error;
@@ -91,18 +105,31 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch meetings');
+        await this.handleHttpError(response);
       }
 
-      const data = await response.json();
-      return Array.isArray(data) ? this.convertMeetingArrayDates(data) : [];
+      const meetings = await response.json();
+      return this.convertMeetingArrayDates(meetings);
     } catch (error) {
       console.error('Error in getAllMeetings:', error);
+      throw error;
+    }
+  }
+
+  async getMeetingsByTutor(tutorId: string): Promise<Meeting[]> {
+    try {
+      const response = await fetch(`${API_URL}/meetings/tutor/${tutorId}`, {
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        await this.handleHttpError(response);
+      }
+
+      const meetings = await response.json();
+      return this.convertMeetingArrayDates(meetings);
+    } catch (error) {
+      console.error('Error in getMeetingsByTutor:', error);
       throw error;
     }
   }
@@ -121,15 +148,14 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update meeting');
+        await this.handleHttpError(response);
       }
 
-      return this.convertMeetingDates(await response.json());
+      const convertedMeeting = this.convertMeetingDates(await response.json());
+      if (!convertedMeeting) {
+        throw new Error('Failed to update meeting: Invalid response data');
+      }
+      return convertedMeeting;
     } catch (error) {
       console.error('Error in updateMeeting:', error);
       throw error;
@@ -144,12 +170,7 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to delete meeting');
+        await this.handleHttpError(response); // Sử dụng hàm xử lý lỗi chung
       }
     } catch (error) {
       console.error('Error in deleteMeeting:', error);
@@ -157,36 +178,48 @@ class MeetingService {
     }
   }
 
-  // async joinMeeting(meetingId: string): Promise<void> {
-  //   try {
-  //     const response = await fetch(`${API_URL}/meetings/join-meeting/${meetingId}`, {
-  //       method: 'POST',
-  //       headers: authService.getAuthHeaders()
-  //     });
+  private async handleHttpError(response: Response): Promise<void> {
+    if (response.status === 401) {
+      authService.removeToken();
+      throw new Error('Authentication required');
+    }
+    
+    try {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'An error occurred');
+    } catch (e) {
+      throw new Error('Failed to process error response');
+    }
+  }
 
-  //     if (!response.ok) {
-  //       if (response.status === 401) {
-  //         authService.removeToken();
-  //         throw new Error('Authentication required');
-  //       }
-  //       const error = await response.json();
-  //       throw new Error(error.message || 'Failed to join meeting');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error in joinMeeting:', error);
-  //     throw error;
-  //   }
-  // }
   async joinMeeting(meetingId: string): Promise<string> {
     try {
-      // No need to process the response or backend link.
-      // We are directly returning the Google Meet link.
-      return "https://meet.google.com/utd-bive-rmy";
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
 
+      const response = await fetch(`${API_URL}/meetings/join-meeting/${meetingId}`, {
+        method: 'POST',
+        headers: {
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        await this.handleHttpError(response);
+      }
+
+      const data = await response.json();
+      if (!data || !data.meetingLink) {
+        throw new Error('No meeting link provided');
+      }
+
+      return data.meetingLink;
     } catch (error) {
       console.error('Error in joinMeeting:', error);
-      return "https://meet.google.com/utd-bive-rmy"; // Still return the link on error
-      throw error; // Optionally re-throw the error for the calling component to handle
+      throw error;
     }
   }
 
@@ -198,12 +231,7 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to leave meeting');
+        await this.handleHttpError(response); // Sử dụng hàm xử lý lỗi chung
       }
     } catch (error) {
       console.error('Error in leaveMeeting:', error);
@@ -218,12 +246,7 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch meeting participants');
+        await this.handleHttpError(response); // Sử dụng hàm xử lý lỗi chung
       }
 
       return await response.json();
@@ -240,15 +263,11 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch meeting schedule');
+        await this.handleHttpError(response); // Sử dụng hàm xử lý lỗi chung
       }
 
-      return this.convertMeetingArrayDates(await response.json());
+      const data = await response.json();
+      return this.convertMeetingArrayDates(data);
     } catch (error) {
       console.error('Error in getMeetingSchedule:', error);
       throw error;
@@ -262,17 +281,28 @@ class MeetingService {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          authService.removeToken();
-          throw new Error('Authentication required');
-        }
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch upcoming meetings');
+        await this.handleHttpError(response); // Sử dụng hàm xử lý lỗi chung
       }
-
-      return this.convertMeetingArrayDates(await response.json());
+      const data = await response.json();
+      return this.convertMeetingArrayDates(data);
     } catch (error) {
       console.error('Error in getUpcomingMeetings:', error);
+      throw error;
+    }
+  }
+
+  async cancelMeeting(meetingId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/meetings/cancel/${meetingId}`, {
+        method: 'PUT',
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        await this.handleHttpError(response);
+      }
+    } catch (error) {
+      console.error('Error in cancelMeeting:', error);
       throw error;
     }
   }

@@ -26,18 +26,42 @@ const CourseDetailPage = () => {
     if (courseId) fetchCourse();
   }, [courseId]);
 
-  if (loading) return <div>Đang tải chi tiết khóa học...</div>;
+  if (loading) return <div>Loading...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
-  if (!course) return <div>Không tìm thấy thông tin khóa học.</div>;
+  if (!course) return <div>Course's information not found!</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">{course.name}</h1>
-      <p className="text-gray-700 my-2">{course.description}</p>
-      <p className="text-sm text-gray-500">Bắt đầu: {course.startDate ? format(course.startDate, 'dd/MM/yyyy') : 'N/A'}</p>
-      <p className="text-sm text-gray-500">Kết thúc: {course.endDate ? format(course.endDate, 'dd/MM/yyyy') : 'N/A'}</p>
-      <p className="text-sm mt-2 text-gray-600">Trạng thái: <span className="capitalize">{course.status}</span></p>
-      <p className="mt-2 text-sm">Giảng viên: {course.tutor?.fullName}</p>
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-3xl font-semibold mb-6 text-center">{course.name}</h1>
+
+      <table className="min-w-full border border-gray-200 shadow rounded-lg overflow-hidden">
+        <tbody>
+          <tr className="border-b">
+            <td className="px-4 py-3 font-medium bg-gray-50 w-1/3">Description</td>
+            <td className="px-4 py-3">{course.description || 'No description available'}</td>
+          </tr>
+          <tr className="border-b">
+            <td className="px-4 py-3 font-medium bg-gray-50">Start Date</td>
+            <td className="px-4 py-3">
+              {course.startDate ? format(course.startDate, 'dd/MM/yyyy') : 'N/A'}
+            </td>
+          </tr>
+          <tr className="border-b">
+            <td className="px-4 py-3 font-medium bg-gray-50">End Date</td>
+            <td className="px-4 py-3">
+              {course.endDate ? format(course.endDate, 'dd/MM/yyyy') : 'N/A'}
+            </td>
+          </tr>
+          <tr className="border-b">
+            <td className="px-4 py-3 font-medium bg-gray-50">Status</td>
+            <td className="px-4 py-3 capitalize">{course.status}</td>
+          </tr>
+          <tr>
+            <td className="px-4 py-3 font-medium bg-gray-50">Tutor</td>
+            <td className="px-4 py-3">{course.tutor?.fullName || 'Unassigned'}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };

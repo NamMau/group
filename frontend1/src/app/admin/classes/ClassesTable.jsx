@@ -176,6 +176,7 @@ export default function ClassesTable({searchTerm} ) {
               </th>
               <th>Name</th>
               <th>Teacher</th>
+              <th>Course</th>
               <th>Description</th>
               <th>Quantity</th>
               <th>Operation</th>
@@ -200,7 +201,9 @@ export default function ClassesTable({searchTerm} ) {
                   />
                   {classItem.tutor.fullName}
                 </td>
-                {/* <td>{classItem.courses.name}</td> */}
+                <td>{Array.isArray(classItem.courses) && classItem.courses.length > 0 
+                    ? classItem.courses.map(course => course.name).join(', ') 
+                    : 'No course assigned'}</td>
                 <td>{classItem.description}</td>
                 <td>{classItem.quantity}</td>
                 <td>
@@ -209,6 +212,12 @@ export default function ClassesTable({searchTerm} ) {
                     onClick={() => handleUpdateClass(classItem._id)}
                   >
                     ✏️
+                  </button>
+                  <button
+                    className={styles.addMeetingButton}
+                    onClick={() => router.push(`/admin/meetings/add?classId=${classItem._id}`)}
+                  >
+                    📅
                   </button>
                   <button
                     className={styles.deleteButton}

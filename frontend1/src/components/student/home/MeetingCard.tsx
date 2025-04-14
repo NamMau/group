@@ -26,8 +26,16 @@ const MeetingCard = () => {
     }
   };
 
-  const formatTime = (time: Date): string => { // Nhận đối tượng Date
+  const formatTime = (time: string | Date): string => {
     try {
+      // If time is a string in HH:mm format, create a Date object
+      if (typeof time === 'string') {
+        const [hours, minutes] = time.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        time = date;
+      }
+
       return time.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -39,8 +47,13 @@ const MeetingCard = () => {
     }
   };
 
-  const formatDate = (date: Date): string => { // Nhận đối tượng Date
+  const formatDate = (date: string | Date): string => {
     try {
+      // If date is a string, convert it to Date object
+      if (typeof date === 'string') {
+        date = new Date(date);
+      }
+
       return date.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'long',
@@ -93,35 +106,36 @@ const MeetingCard = () => {
   return (
     <div className="space-y-4">
       {meetings.map((meeting) => (
-        <div key={meeting._id} className="bg-white p-4 rounded-lg shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">{meeting.notes}</h3>
-              {meeting.course && <p className="text-sm text-gray-600">Class: {meeting.course.name}</p>}
-              {meeting.tutor && <p className="text-sm text-gray-600">Tutor: {meeting.tutor.fullName}</p>}
-            </div>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              meeting.status === 'completed' ? 'bg-green-100 text-green-800' :
-              meeting.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-              meeting.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-              'bg-gray-100 text-gray-800'
+        <div
+          key={meeting._id}
+          className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-gray-800">
+              {formatDate(meeting.date)}
+            </h3>
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              meeting.status === 'scheduled' ? 'bg-green-100 text-green-800' :
+              meeting.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+              'bg-red-100 text-red-800'
             }`}>
-              {meeting.status}
+              {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
             </span>
           </div>
-
-          <div className="mt-2 text-sm text-gray-600">
-            <p>Time: {formatTime(meeting.time)}</p> {/* Gọi với đối tượng Date */}
-            <p>Date: {formatDate(meeting.date)}</p> {/* Gọi với đối tượng Date */}
+          <div className="flex items-center text-gray-600 text-sm mb-2">
+            <FaVideo className="mr-2" />
+            <span>{formatTime(meeting.time)}</span>
+            <span className="mx-2">•</span>
+            <span>{meeting.duration} minutes</span>
           </div>
-
-          <button
-            onClick={() => handleJoinMeeting(meeting.meetingLink)}
-            className="mt-3 flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
-          >
-            <FaVideo />
-            <span>Join now</span>
-          </button>
+          {meeting.meetingLink && (
+            <button
+              onClick={() => handleJoinMeeting(meeting.meetingLink)}
+              className="w-full mt-2 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-sm"
+            >
+              Join Meeting
+            </button>
+          )}
         </div>
       ))}
     </div>

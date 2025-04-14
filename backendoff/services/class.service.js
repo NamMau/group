@@ -6,18 +6,17 @@ const User = require('../models/user.model');
 class ClassService {
   async createClass(classData, adminId) {
     try {
-      // Kiểm tra nếu thiếu trường quan trọng
+      // Check if `classData` is valid
       if (!classData.name || !classData.tutor) {
         throw new Error('Class name and tutor ID are required.');
       }
-  
-      // Kiểm tra xem `tutor` có tồn tại không
+      
       const tutor = await User.findById(classData.tutor);
       if (!tutor) {
         throw new Error(`Tutor not found with ID: ${classData.tutor}`);
       }
   
-      // Kiểm tra danh sách sinh viên nếu có
+      //check if class already exists
       if (classData.students && classData.students.length > 0) {
         const students = await User.find({ _id: { $in: classData.students } });
         const foundStudentIds = students.map((s) => s._id.toString());
@@ -30,8 +29,7 @@ class ClassService {
           throw new Error(`Invalid student IDs: ${invalidStudents.join(', ')}`);
         }
       }
-  
-      // Kiểm tra danh sách khóa học nếu có
+      //check if class course already exists
       if (classData.courses && classData.courses.length > 0) {
         const courses = await Course.find({ _id: { $in: classData.courses } });
         const foundCourseIds = courses.map((c) => c._id.toString());
@@ -45,10 +43,9 @@ class ClassService {
         }
       }
   
-      // Gán `createdBy` là admin
       classData.createdBy = adminId;
   
-      // Tạo lớp học mới
+      //create a new class
       const newClass = await Class.create(classData);
       return newClass;
     } catch (error) {

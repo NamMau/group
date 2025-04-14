@@ -32,7 +32,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
       setError(null);
     } catch (err) {
       console.error('Error fetching appointments:', err);
-      setError('Không thể tải danh sách lịch hẹn');
+      setError('Cannot load appointments. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
 
       <div className="divide-y">
         {appointments.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">Không có lịch hẹn nào cho ngày này</div>
+          <div className="p-4 text-center text-gray-500">There is no appointment for this day.</div>
         ) : (
           appointments.map((appointment) => (
             <div key={appointment._id} className="p-4 hover:bg-gray-50">
@@ -105,7 +105,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
                     <FaUser className="text-orange-500" />
                     <div>
                       {typeof appointment.student === 'string' ? (
-                        <span className="font-medium text-gray-800">Không rõ sinh viên</span>
+                        <span className="font-medium text-gray-800">Student not found</span>
                       ) : (
                         <div className="text-gray-800">
                           <div className="font-medium">{appointment.student.fullName}</div>
@@ -136,7 +136,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ selectedDate }) => {
               </div>
               {appointment.notes && (
                 <div className="mt-2 text-sm text-gray-600">
-                  Ghi chú: {appointment.notes}
+                  Note: {appointment.notes}
                 </div>
               )}
             </div>

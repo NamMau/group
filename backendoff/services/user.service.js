@@ -2,6 +2,8 @@ const User = require('../models/user.model');
 const { sendEmail } = require('./email.service');
 const bcrypt = require('bcrypt');
 const StudySession = require('../models/studySession.model');
+const Meeting = require('../models/meeting.model');
+const Message = require('../models/message.model');
 
 class UserService {
 
@@ -176,6 +178,72 @@ class UserService {
         }
 
         return student.enrolledCourses;
+    }
+
+    async getUserDashboard(userId) {
+        try {
+            // Verify user exists and is a tutor
+            const tutor = await User.findById(userId);
+            if (!tutor || tutor.role !== 'tutor') {
+                throw new Error('User not found or not a tutor');
+            }
+
+            // Get students assigned to this tutor
+            const students = await User.find({ 
+                tutorId: userId,
+                role: 'student'
+            }).select('_id fullName lastActive progress');
+
+            // Get upcoming meetings
+            const upcomingMeetings = await Meeting.find({
+                tutorId: userId,
+                startTime: { $gt: new Date() }
+            })
+            .sort({ startTime: 1 })
+            .limit(5)
+            .populate('students', '_id fullName');
+
+            // Get message statistics
+            const messages = await Message.find({
+                $or: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ]
+            });
+
+            const unreadMessages = await Message.countDocuments({
+                receiverId: userId,
+                read: false
+            });
+
+            const totalMessages = messages.length;
+            const sentMessages = messages.filter(m => m.senderId.toString() === userId).length;
+            const responseRate = sentMessages > 0 ? Math.round((sentMessages / totalMessages) * 100) : 0;
+
+            return {
+                students: students.map(s => ({
+                    _id: s._id,
+                    fullName: s.fullName,
+                    progress: s.progress || 0,
+                    lastActivity: s.lastActive || new Date()
+                })),
+                upcomingMeetings: upcomingMeetings.map(m => ({
+                    _id: m._id,
+                    title: m.title,
+                    startTime: m.startTime,
+                    duration: m.duration,
+                    students: m.students
+                })),
+                messageStats: {
+                    totalMessages,
+                    unreadMessages,
+                    responseRate
+                }
+            };
+        } catch (error) {
+            console.error('Error in getUserDashboard:', error);
+            throw error;
+        }
     }
 }
 

@@ -11,11 +11,11 @@ const { authenticate, isTutorOrAdmin, isOwnerOrAdmin, isAdmin } = require('../mi
 router.post('/:courseId/enroll-bulk', authenticate, isAdmin, courseController.bulkEnrollStudents);
 router.post('/create-course', authenticate, isAdmin, courseController.createCourse);
 router.get('/get-courses',  authenticate,courseController.getCourses);
-router.get('/:courseId', courseController.getCourseById);
 router.put('/update-course/:courseId', authenticate, isOwnerOrAdmin, courseController.updateCourse);
 router.delete('/delete-course:courseId', authenticate, isOwnerOrAdmin, courseController.deleteCourse);
 
 router.get("/:userId/courses", courseController.getUserCourses);
+router.get('/:courseId', courseController.getCourseById);
  
 // Class management
 // router.post('/:courseId/classes', isTutorOrAdmin, courseController.createClass);

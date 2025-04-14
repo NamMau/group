@@ -1,11 +1,11 @@
 // const Notification = require('../models/notification.model');
 
-const NotificationModel = require('../models/notification.model'); // đảm bảo đúng đường dẫn
+const Notification = require('../models/notification.model');
 const mongoose = require('mongoose');
 
 const createNotification = async (userId, message) => {
   try {
-      const notification = await NotificationModel.create({
+      const notification = await Notification.create({
           user: userId,
           message: message,
           createdAt: new Date(),
@@ -21,9 +21,12 @@ const createNotification = async (userId, message) => {
 // Fetch all notifications for a specific user
 const fetchNotifications = async (userId) => {
   try {
-    const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+    const notifications = await Notification.find({ user: userId })
+      .populate('user', 'fullName avatar')
+      .sort({ createdAt: -1 });
     return notifications;
   } catch (err) {
+    console.error('Error fetching notifications:', err);
     throw new Error('Error fetching notifications');
   }
 };
@@ -31,11 +34,20 @@ const fetchNotifications = async (userId) => {
 // Mark a notification as read
 const markAsRead = async (notificationId) => {
   try {
-      const notification = await NotificationModel.findByIdAndUpdate(notificationId, { isRead: true }, { new: true });
-      return notification;
+    const notification = await Notification.findByIdAndUpdate(
+      notificationId, 
+      { isRead: true }, 
+      { new: true }
+    ).populate('user', 'fullName avatar');
+    
+    if (!notification) {
+      throw new Error('Notification not found');
+    }
+    
+    return notification;
   } catch (error) {
-      console.error("Error marking notification as read:", error);
-      throw new Error("Failed to mark notification as read");
+    console.error("Error marking notification as read:", error);
+    throw new Error("Failed to mark notification as read");
   }
 };
 

@@ -38,6 +38,7 @@ exports.getAllBlogs = async (req, res) => {
         const blogs = await Blog.find({})
             .populate('author', 'fullName email')
             .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
             .sort({ createdAt: -1 });
 
         if (!blogs || blogs.length === 0) {
@@ -193,7 +194,15 @@ exports.addComment = async (req, res) => {
         });
 
         await blog.save();
-        res.json({data:blog});
+        
+        // Populate the blog with author information after saving
+        const populatedBlog = await Blog.findById(blog._id)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
+
+        res.json({data: populatedBlog});
     } catch (error) {
         res.status(500).json({ message: 'Error adding comment: ' + error.message });
     }
@@ -216,10 +225,18 @@ exports.toggleLike = async (req, res) => {
         }
 
         await blog.save();
+
+        // Return populated blog
+        const populatedBlog = await Blog.findById(blog._id)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
+
         res.json({
             success: true,
             message: 'Like status updated',
-            data: blog
+            data: populatedBlog
         });
     } catch (error) {
         res.status(500).json({ message: 'Error toggling like: ' + error.message });
@@ -397,5 +414,46 @@ exports.searchPosts = async (req, res) => {
         res.json({data: posts});
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+// Delete a comment from a blog post
+exports.deleteComment = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const commentId = req.params.commentId;
+        const userId = req.user._id;
+
+        const blog = await Blog.findById(postId);
+        if (!blog) {
+            return res.status(404).json({ message: 'Blog post not found' });
+        }
+
+        // Find the comment
+        const comment = blog.comments.id(commentId);
+        if (!comment) {
+            return res.status(404).json({ message: 'Comment not found' });
+        }
+
+        // Check if user is authorized to delete the comment
+        if (comment.author.toString() !== userId.toString()) {
+            return res.status(403).json({ message: 'Not authorized to delete this comment' });
+        }
+
+        // Remove the comment and save
+        blog.comments.pull({ _id: commentId });
+        await blog.save();
+
+        // Return populated blog
+        const populatedBlog = await Blog.findById(postId)
+            .populate('author', 'fullName email')
+            .populate('course', 'name')
+            .populate('comments.author', 'fullName email')
+            .sort({ createdAt: -1 });
+
+        res.json({ data: populatedBlog });
+    } catch (error) {
+        console.error('Error in deleteComment:', error);
+        res.status(500).json({ message: 'Error deleting comment: ' + error.message });
     }
 };

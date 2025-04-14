@@ -3,8 +3,8 @@ const classService = require('../services/class.service');
 
 exports.createClass = async (req, res) => {
   try {
-    const { courseId } = req.params; // Nếu không cần, có thể bỏ
-    const adminId = req.user ? req.user._id : null; // Kiểm tra nếu có user
+    const { courseId } = req.params;
+    const adminId = req.user ? req.user._id : null;
 
     if (!adminId) {
       return res.status(403).json({ message: 'Unauthorized: Missing admin ID.' });
@@ -12,12 +12,11 @@ exports.createClass = async (req, res) => {
 
     const classData = req.body;
 
-    // Kiểm tra xem classData có hợp lệ không
+    // check if classdata valid or not
     if (!classData || !classData.name || !classData.startDate || !classData.endDate || !classData.quantity) {
       return res.status(400).json({ message: 'Missing required fields (name, startDate, endDate, quantity).' });
     }
 
-    // Gọi service để tạo lớp học
     const newClass = await classService.createClass(classData, adminId);
 
     return res.status(201).json({

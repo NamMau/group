@@ -2,87 +2,152 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { blogService } from "../../../services/blogService";
-import Sidebar from "@/components/student/dashboard/Sidebar";
-import Navbar from "@/components/student/dashboard/Navbar";
-import BlogPost from "@/components/student/blog/BlogPost";
-//import TutorList, { TutorListProps, Tutor } from "@/components/student/blog/TutorList";
-import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
-import type { BlogPost as BlogPostType, UpdateBlogData } from "../../../services/blogService";
-import { userService } from "../../../services/userService";
+import Sidebar from "@/components/tutor/dashboard/Sidebar";
+import Navbar from "@/components/tutor/dashboard/Navbar";
+import BlogPost from "@/components/tutor/blog/BlogPost";
+import { FiPlus } from "react-icons/fi";
+import type { BlogPost as BlogPostType } from "../../../services/blogService";
 import { authService } from "../../../services/authService";
-import axios from "axios";
+import { toast } from "react-hot-toast";
 
-const PersonalBlog = () => {
+const TutorBlog = () => {
   const router = useRouter();
   const [blogs, setBlogs] = useState<BlogPostType[]>([]);
-  //const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBlogs = async () => {
       try {
-        if (!authService.isAuthenticated()) {
-          router.push('/login');
+        setLoading(true);
+        const user = authService.getUser();
+        if (!user) {
+          router.push("/login");
           return;
         }
-
-        const blogResponse = await blogService.getAllBlogs();
-        const tutorResponse = await userService.getTutors();
-
-        if (Array.isArray(blogResponse)) {
-          setBlogs(blogResponse);
-        } else {
-          setBlogs([]);
-        }
-
-        // if (Array.isArray(tutorResponse)) {
-        //   // Type cast the tutors fetched from userService to the Tutor interface
-        //   setTutors(tutorResponse as Tutor[]);
-        // } else {
-        //   setTutors([]);
-        // }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          router.push('/login');
-        } else {
-          setError(err instanceof Error ? err.message : "Failed to fetch data");
-        }
+        setCurrentUserId(user._id);
+        const data = await blogService.getAllBlogs();
+        setBlogs(data);
+      } catch (error) {
+        handleFetchError(error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchBlogs();
   }, [router]);
 
-  const handleDeleteBlog = async (blogId: string) => {
+  const handleFetchError = (error: unknown) => {
+    let errorMessage = "Failed to fetch data";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (error.message.includes("401")) {
+        authService.logout();
+        router.push("/login");
+      }
+    }
+    setError(errorMessage);
+    console.error("API Error:", error);
+  };
+
+  const handleUpdatePost = async (updatedPost: BlogPostType) => {
     try {
-      await blogService.deletePost(blogId);
-      setBlogs(blogs.filter(blog => blog._id !== blogId));
+      const result = await blogService.updatePost(updatedPost._id, {
+        title: updatedPost.title,
+        content: updatedPost.content,
+        tags: updatedPost.tags,
+        visibility: updatedPost.visibility,
+      });
+      
+      setBlogs(prev => 
+        prev.map(post => post._id === updatedPost._id ? result : post)
+      );
+      toast.success("Post updated successfully");
     } catch (err) {
-      console.error("Error deleting blog:", err);
-      alert("Failed to delete blog");
+      console.error("Update failed:", err);
+      toast.error("Failed to update post");
     }
   };
 
-  const handleEditBlog = async (blogId: string) => {
+  const handleDeletePost = async (postId: string) => {
     try {
-      const updatedBlogData: UpdateBlogData = {
-        title: "Updated Blog Title",
-        content: "Updated blog content",
-        tags: ["Updated Tag1", "Updated Tag2"],
-        visibility: "public",
-        //featuredImage: "default-avatar.png",
-      };
-
-      const response = await blogService.updatePost(blogId, updatedBlogData);
-      setBlogs(blogs.map(blog => (blog._id === blogId ? { ...blog, ...response } : blog)));
-      router.push('/tutor/blog');
+      await blogService.deletePost(postId);
+      setBlogs(prev => prev.filter(post => post._id !== postId));
+      toast.success("Post deleted successfully");
     } catch (err) {
-      console.error("Error editing blog:", err);
-      alert("Failed to update blog");
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete post");
+    }
+  };
+
+  const handleToggleLike = async (postId: string) => {
+    try {
+      const updatedPost = await blogService.toggleLike(postId);
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Like updated successfully");
+    } catch (err) {
+      console.error("Toggle like failed:", err);
+      toast.error("Failed to toggle like");
+    }
+  };
+
+  const handleAddComment = async (postId: string, content: string) => {
+    try {
+      const updatedPost = await blogService.addComment(postId, content);
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Comment added successfully");
+    } catch (err) {
+      console.error("Add comment failed:", err);
+      toast.error("Failed to add comment");
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try {
+      const updatedPost = await blogService.deleteComment(postId, commentId);
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Comment deleted successfully");
+    } catch (err) {
+      console.error("Delete comment failed:", err);
+      toast.error("Failed to delete comment");
     }
   };
 
@@ -134,70 +199,39 @@ const PersonalBlog = () => {
 
         <div className="pt-20 px-6 space-y-6 overflow-auto min-h-screen flex">
           <div className="w-3/4">
-            <div className="mb-6 flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Personal Blog</h1>
-                <p className="text-gray-600 mt-2">
-                  Share your thoughts and experiences with the community
-                </p>
-              </div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Blog Posts</h2>
               <button
-                onClick={() => router.push('/tutor/blog/create')}
-                className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+                onClick={() => router.push("/tutor/blog/create")}
+                className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               >
-                <FiPlus className="mr-2" />
-                Create New Blog
+                <span className="mr-2">+New Post</span>
               </button>
             </div>
-            {Array.isArray(blogs) && blogs.length > 0 ? (
-              blogs.map((blog) => (
-                <div key={blog._id} className="relative group">
-                  <BlogPost
-                    post={blog}
-                    currentUserId={localStorage.getItem('userId') || ''}
-                    onUpdate={async () => {
-                      const updatedBlogs = await blogService.getAllBlogs();
-                      setBlogs(updatedBlogs);
-                    }}
-                    onDelete={async (postId) => {
-                      await handleDeleteBlog(postId);
-                    }}
-                  />
-                  <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEditBlog(blog._id)}
-                      className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                    >
-                      <FiEdit2 className="text-blue-500" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBlog(blog._id)}
-                      className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                    >
-                      <FiTrash2 className="text-red-500" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Blog Posts Yet</h3>
-                <p className="text-gray-600">Start sharing your thoughts with the community!</p>
+            
+            {blogs.length === 0 ? (
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-gray-500 text-center">No blog posts available yet!</p>
               </div>
+            ) : (
+              blogs.map((blog) => (
+                <BlogPost
+                  key={blog._id}
+                  post={blog}
+                  onUpdate={handleUpdatePost}
+                  onDelete={handleDeletePost}
+                  onToggleLike={handleToggleLike}
+                  onAddComment={handleAddComment}
+                  onDeleteComment={handleDeleteComment}
+                  currentUserId={currentUserId}
+                />
+              ))
             )}
           </div>
-
-          {/* <div className="w-1/4 p-4 bg-white shadow-md rounded-lg">
-            <TutorList
-              tutors={tutors}
-              onNewPost={() => router.push('/tutor/blog/create')}
-              onTutorClick={(tutorId) => router.push(`/tutor/profile/${tutorId}`)}
-            />
-          </div> */}
         </div>
       </div>
     </div>
   );
 };
 
-export default PersonalBlog;
+export default TutorBlog;

@@ -81,13 +81,13 @@ export const chatService = {
     try {
       const response = await axios.post(
         `${API_URL}/messages/send-message/${recipientId}`,
-        { content },
+        { receiverId: recipientId, content },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       return response.data;
     } catch (error) {
       console.error('Error sending message:', error);
-      return null;
+      throw error; // Re-throw the error so components can handle it
     }
   },
 
@@ -179,6 +179,31 @@ export const chatService = {
       }));
     } catch (error) {
       console.error('Error fetching message stats:', error);
+      return [];
+    }
+  },
+
+  // Get messages by tutor
+  getMessagesByTutor: async (tutorId: string, limit: number = 5): Promise<Message[]> => {
+    const token = authService.getToken();
+    if (!token) return [];
+
+    try {
+      const response = await axios.get(
+        `${API_URL}/messages/get-messages-by-tutor/${tutorId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { limit }
+        }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to fetch messages');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching tutor messages:', error);
       return [];
     }
   }

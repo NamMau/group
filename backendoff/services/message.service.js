@@ -138,6 +138,33 @@ class MessageService {
 
         return Object.values(threads);
     }
+
+    async getMessagesByTutor(tutorId, limit = 5) {
+        try {
+            // Validate tutor exists and is actually a tutor
+            const tutor = await User.findOne({ _id: tutorId, role: 'tutor' });
+            if (!tutor) {
+                throw new Error('Tutor not found');
+            }
+
+            // Get messages where tutor is either sender or recipient
+            const messages = await Message.find({
+                $or: [
+                    { sender: tutorId },
+                    { recipient: tutorId }
+                ]
+            })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .populate('sender', 'fullName email')
+            .populate('recipient', 'fullName email');
+
+            return messages;
+        } catch (error) {
+            console.error('Error in message service - getMessagesByTutor:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new MessageService(); 

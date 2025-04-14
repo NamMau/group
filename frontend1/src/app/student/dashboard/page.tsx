@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/student/dashboard/Sidebar";
 import Navbar from "@/components/student/dashboard/Navbar";
 import TimeSpentChart from "@/components/student/dashboard/TimeSpentChart";
-import CourseList from "@/components/student/dashboard/CourseList";
 import NotificationDropdown from "@/components/student/dashboard/NotificationDropdown";
 import InboxDropdown from "@/components/student/dashboard/InboxDropdown";
 import PopupMessage from "@/components/student/dashboard/PopupMessage";
@@ -12,10 +11,18 @@ import { courseService } from "../../../services/courseService";
 import { userService } from "../../../services/userService";
 import { authService } from "../../../services/authService";
 
+interface User {
+  _id: string;
+  role: string;
+  name: string;
+  email: string;
+}
+
 const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<User | null>(null);
+  const [activeCourses, setActiveCourses] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -34,6 +41,11 @@ const StudentDashboard = () => {
         }
 
         setUserData(user);
+
+        // Fetch active courses
+        const courses = await courseService.getUserCourses(user._id);
+        setActiveCourses(courses.length);
+
       } catch (err) {
         console.error("Dashboard error:", err);
         setError("Failed to load dashboard data. Please try again.");
@@ -89,7 +101,7 @@ const StudentDashboard = () => {
       <div className="flex-1 ml-64 pt-20 p-6 space-y-6"> {/* Added pt-20 here */}
         {/* Navbar */}
         <div className="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-white shadow-md z-50">
-          <Navbar userData={userData} />
+          <Navbar />
         </div>
 
         {/* Time Spent Chart and Quick Stats */}
@@ -103,28 +115,12 @@ const StudentDashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4">Quick Stats</h2>
             <div className="space-y-4">
-              <div className="p-4 bg-orange-50 rounded-lg">
-                <p className="text-sm text-gray-600">Total Study Hours</p>
-                <p className="text-2xl font-bold text-orange-600">24h</p>
-              </div>
               <div className="p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">Active Courses</p>
-                <p className="text-2xl font-bold text-blue-600">3</p>
-              </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-600">Completed Courses</p>
-                <p className="text-2xl font-bold text-green-600">2</p>
+                <p className="text-2xl font-bold text-blue-600">{activeCourses}</p>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Course List */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Your Courses</h2>
-          </div>
-          <CourseList /> {/* Assuming CourseList renders the course cards */}
         </div>
       </div>
     </div>

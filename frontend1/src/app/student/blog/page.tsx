@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/student/dashboard/Sidebar";
@@ -10,6 +9,8 @@ import { blogService } from "../../../services/blogService";
 import { userService } from "../../../services/userService";
 import { authService } from "../../../services/authService";
 import { useRouter } from "next/navigation";
+import { FiPlus } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 
 type Tutor = {
   _id: string;
@@ -30,58 +31,26 @@ const PersonalBlog = () => {
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBlogs = async () => {
       try {
-        // Check for token first
-        const token = authService.getToken();
-        if (!token) {
-          console.error("No authentication token found");
+        setLoading(true);
+        const user = authService.getUser();
+        if (!user) {
           router.push("/login");
           return;
         }
-
-        // Get user info from localStorage
-        const userJson = localStorage.getItem("user");
-        if (!userJson) {
-          console.error("No user data found");
-          router.push("/login");
-          return;
-        }
-
-        // Parse user data
-        try {
-          const userData = JSON.parse(userJson);
-          if (!userData._id) {
-            throw new Error("Invalid user data structure");
-          }
-          setCurrentUserId(userData._id);
-          
-          // Log for debugging
-          console.log("Using user ID:", userData._id);
-
-          // Fetch blogs and tutors in parallel
-          const [studentBlogs, tutorsData] = await Promise.all([
-            blogService.getStudentBlogs(userData._id),
-            userService.getTutors()
-          ]);
-
-          setBlogs(Array.isArray(studentBlogs) ? studentBlogs : []);
-          setTutors(Array.isArray(tutorsData) ? tutorsData : []);
-        } catch (parseError) {
-          console.error("Error parsing user data:", parseError);
-          authService.logout();
-          router.push("/login");
-          return;
-        }
-      } catch (err) {
-        handleFetchError(err);
+        setCurrentUserId(user._id);
+        const data = await blogService.getAllBlogs();
+        setBlogs(data);
+      } catch (error) {
+        handleFetchError(error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchBlogs();
+  }, [router]);
 
   const handleFetchError = (error: unknown) => {
     let errorMessage = "Failed to fetch data";
@@ -103,15 +72,15 @@ const PersonalBlog = () => {
         content: updatedPost.content,
         tags: updatedPost.tags,
         visibility: updatedPost.visibility,
-        featuredImage: updatedPost.featuredImage || ""
       });
       
       setBlogs(prev => 
         prev.map(post => post._id === updatedPost._id ? result : post)
       );
+      toast.success("Post updated successfully");
     } catch (err) {
       console.error("Update failed:", err);
-      alert("Failed to update post");
+      toast.error("Failed to update post");
     }
   };
 
@@ -119,62 +88,112 @@ const PersonalBlog = () => {
     try {
       await blogService.deletePost(postId);
       setBlogs(prev => prev.filter(post => post._id !== postId));
+      toast.success("Post deleted successfully");
     } catch (err) {
       console.error("Delete failed:", err);
-      alert("Failed to delete post");
+      toast.error("Failed to delete post");
     }
   };
 
   const handleToggleLike = async (postId: string) => {
     try {
       const updatedPost = await blogService.toggleLike(postId);
-      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Like updated successfully");
     } catch (err) {
       console.error("Toggle like failed:", err);
-      alert("Failed to toggle like");
+      toast.error("Failed to toggle like");
     }
   };
 
   const handleAddComment = async (postId: string, content: string) => {
     try {
       const updatedPost = await blogService.addComment(postId, content);
-      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Comment added successfully");
     } catch (err) {
       console.error("Add comment failed:", err);
-      alert("Failed to add comment");
+      toast.error("Failed to add comment");
     }
   };
 
   const handleDeleteComment = async (postId: string, commentId: string) => {
     try {
       const updatedPost = await blogService.deleteComment(postId, commentId);
-      setBlogs(prev => prev.map(post => post._id === postId ? updatedPost : post));
+      // Get the original post to preserve author info
+      const originalPost = blogs.find(post => post._id === postId);
+      if (originalPost) {
+        setBlogs(prev => prev.map(post => {
+          if (post._id === postId) {
+            return {
+              ...updatedPost,
+              author: originalPost.author // Keep the original author info
+            };
+          }
+          return post;
+        }));
+      }
+      toast.success("Comment deleted successfully");
     } catch (err) {
       console.error("Delete comment failed:", err);
-      alert("Failed to delete comment");
+      toast.error("Failed to delete comment");
     }
   };
 
   if (loading) {
     return (
-      <div className="flex bg-gray-100 min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex bg-gray-100">
+        <div className="w-64 bg-white shadow-md fixed left-0 top-[70px] h-[calc(100vh-70px)]">
+          <Sidebar />
+        </div>
+        <div className="flex-1 ml-64 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex bg-gray-100 min-h-screen items-center justify-center">
-        <div className="text-red-500 text-center">
-          <p className="text-xl font-semibold">Error</p>
-          <p>{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
+      <div className="flex bg-gray-100">
+        <div className="w-64 bg-white shadow-md fixed left-0 top-[70px] h-[calc(100vh-70px)]">
+          <Sidebar />
+        </div>
+        <div className="flex-1 ml-64 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">Error</h2>
+            <p className="text-gray-600">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -194,7 +213,7 @@ const PersonalBlog = () => {
         <div className="pt-20 px-6 space-y-6 overflow-auto min-h-screen flex">
           <div className="w-3/4">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Personal Blog</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Blog Posts</h2>
               <button
                 onClick={() => router.push("/student/blog/create")}
                 className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
@@ -205,7 +224,7 @@ const PersonalBlog = () => {
             
             {blogs.length === 0 ? (
               <div className="bg-white p-6 rounded-lg shadow">
-                <p className="text-gray-500 text-center">Start writing your first blog post!</p>
+                <p className="text-gray-500 text-center">No blog posts available yet!</p>
               </div>
             ) : (
               blogs.map((blog) => (

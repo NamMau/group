@@ -45,11 +45,26 @@ interface Notification {
   createdAt: string;
 }
 
+export interface DashboardStats {
+  messageStats: {
+    last7Days: number[];
+    averagePerTutor: { tutorName: string; average: number }[];
+  };
+  exceptionStats: {
+    studentsWithoutTutor: number;
+    inactiveStudents: {
+      sevenDays: number;
+      twentyEightDays: number;
+    };
+  };
+}
+
 export class UserService {
   private getHeaders() {
+    const token = authService.getToken();
     return {
-      ...authService.getAuthHeaders(),
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -557,6 +572,104 @@ export class UserService {
       return await response.json();
     } catch (error) {
       console.error('Error in getEnrolledCourses:', error);
+      throw error;
+    }
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    try {
+      console.log('Fetching users with role:', role); // Debug log
+      const response = await fetch(`${API_URL}/users/role/${role}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData); // Debug log
+        throw new Error(errorData.message || 'Failed to fetch users');
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data); // Debug log
+      return data;
+    } catch (error) {
+      console.error('Error in getUsersByRole:', error);
+      throw error;
+    }
+  }
+
+  async getAdminDashboardStats(): Promise<DashboardStats> {
+    try {
+      const response = await fetch(`${API_URL}/admin/dashboard-stats`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch dashboard stats');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getAdminDashboardStats:', error);
+      throw error;
+    }
+  }
+
+  async getMessageStatistics(): Promise<{
+    last7Days: { date: string; count: number }[];
+    averagePerTutor: { tutorName: string; average: number }[];
+  }> {
+    try {
+      const response = await fetch(`${API_URL}/admin/message-statistics`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch message statistics');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getMessageStatistics:', error);
+      throw error;
+    }
+  }
+
+  async getExceptionReports(): Promise<{
+    studentsWithoutTutor: { studentId: string; fullName: string }[];
+    inactiveStudents: {
+      sevenDays: { studentId: string; fullName: string; lastActivity: Date }[];
+      twentyEightDays: { studentId: string; fullName: string; lastActivity: Date }[];
+    };
+  }> {
+    try {
+      const response = await fetch(`${API_URL}/admin/exception-reports`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch exception reports');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getExceptionReports:', error);
       throw error;
     }
   }

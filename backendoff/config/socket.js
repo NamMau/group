@@ -1,4 +1,7 @@
 const socketIO = require('socket.io');
+const jwt = require('jsonwebtoken');
+const Message = require('../models/message.model');
+const Meeting = require('../models/meeting.model');
 
 let io;
 
@@ -6,7 +9,8 @@ const initializeSocket = (server) => {
     io = socketIO(server, {
         cors: {
             origin: process.env.FRONTEND_URL || "http://localhost:3000",
-            methods: ["GET", "POST"]
+            methods: ["GET", "POST"],
+            credentials: true
         }
     });
 
@@ -33,26 +37,24 @@ const initializeSocket = (server) => {
         socket.on('send_message', async (data) => {
             try {
                 const { receiverId, content } = data;
-                //Save message to database
                 const message = await Message.create({
                     sender: socket.user.userId,
                     receiver: receiverId,
                     content
                 });
 
-                //Send message to reveiver
                 io.to(`user_${receiverId}`).emit('receive_message', {
                     message,
                     sender: socket.user.userId
                 });
             } catch (error) {
                 console.error('Error sending message:', error);
+                socket.emit('error', { message: 'Failed to send message' });
             }
         });
 
         socket.on('join_meeting', async (meetingId) => {
             try {
-                //check if meeting exists
                 const meeting = await Meeting.findById(meetingId);
                 if (!meeting) {
                     socket.emit('error', { message: 'Meeting not found' });
@@ -60,19 +62,19 @@ const initializeSocket = (server) => {
                 }
 
                 socket.join(`meeting_${meetingId}`);
-
-                socket.to(`meeting_${meetingId}`).emit('user_joined', {
+                io.to(`meeting_${meetingId}`).emit('user_joined', {
                     userId: socket.user.userId,
                     timestamp: new Date()
                 });
             } catch (error) {
                 console.error('Error joining meeting:', error);
+                socket.emit('error', { message: 'Failed to join meeting' });
             }
         });
 
         socket.on('leave_meeting', (meetingId) => {
             socket.leave(`meeting_${meetingId}`);
-            socket.to(`meeting_${meetingId}`).emit('user_left', {
+            io.to(`meeting_${meetingId}`).emit('user_left', {
                 userId: socket.user.userId,
                 timestamp: new Date()
             });
@@ -95,12 +97,14 @@ const initializeSocket = (server) => {
     return io;
 };
 
+const getIO = () => {
+    if (!io) {
+        throw new Error('Socket.io not initialized!');
+    }
+    return io;
+};
+
 module.exports = {
     initializeSocket,
-    getIO: () => {
-        if (!io) {
-            throw new Error('Socket.io not initialized!');
-        }
-        return io;
-    }
+    getIO
 }; 

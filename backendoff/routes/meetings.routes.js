@@ -6,12 +6,16 @@ const { authenticate, isAdmin, isTutor } = require('../middlewares/auth');
 // Meeting management
 router.post('/create-meeting',authenticate, meetingController.createMeeting);
 router.get('/get-meetings', authenticate, meetingController.getMeetings);
-router.get('/get-meeting/:meetingId', meetingController.getMeetingById);
+router.get('/tutor/:tutorId', authenticate, meetingController.getMeetingsByTutor);
+router.put('/cancel/:meetingId', authenticate, meetingController.cancelMeeting);
+
 router.put('/update-meeting/:meetingId', authenticate, meetingController.updateMeeting);
 router.delete('/delete-meeting/:meetingId', authenticate, meetingController.deleteMeeting);
 
 // Meeting participation
-router.post('/join-meetin/:meetingId', meetingController.joinMeeting);
+router.get('/get-meeting/:meetingId', meetingController.getMeetingById);
+router.post('/join-meeting/:meetingId', meetingController.joinMeeting);
+
 router.post('/leave-meeting/:meetingId/leave', meetingController.leaveMeeting);
 router.get('/getmeetingparti/:meetingId/participants', authenticate, meetingController.getMeetingParticipants);
 

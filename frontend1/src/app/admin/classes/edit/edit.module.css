@@ -118,3 +118,15 @@
   .submitButton:hover {
     background-color: #2980b9;
   }
+
+  .studentSelect {
+    min-height: 150px;
+    width: 100%;
+  }
+
+  .helperText {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #666;
+  }

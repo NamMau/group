@@ -9,7 +9,7 @@ const authenticate = async (req, res, next) => {
     if (adminCount === 0 && req.path === '/register-admin' && req.method === 'POST') {
       return next(); // go through to register admin
     }
-
+    
     // Check token admin in db?
     const token = req.headers['authorization']?.split(' ')[1];
     if (!token) {

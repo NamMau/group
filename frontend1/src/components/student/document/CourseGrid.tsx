@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import CourseCard from "./CourseCard";
 import { courseService, Course } from "@/services/courseService";
-import { authService } from "@/services/authService"; 
+import { authService } from "@/services/authService";
+import { useRouter } from "next/navigation";
 
 const CourseGrid = () => {
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,9 +21,16 @@ const CourseGrid = () => {
       setIsLoading(true);
       setError(null);
 
-      const user = authService.getUser(); 
+      const token = authService.getToken();
+      if (!token) {
+        router.push("/student/login");
+        return;
+      }
+
+      const user = authService.getUser();
       if (!user || !user._id) {
-        throw new Error("User not authenticated");
+        router.push("/student/login");
+        return;
       }
 
       const courses = await courseService.getUserCourses(user._id);

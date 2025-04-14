@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const meetingSchema = new mongoose.Schema({
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: true
+  },
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
@@ -53,6 +58,7 @@ const meetingSchema = new mongoose.Schema({
 });
 
 // Indexes for faster queries
+meetingSchema.index({ classId: 1 });
 meetingSchema.index({ courseId: 1, studentId: 1 });
 meetingSchema.index({ date: 1 });
 meetingSchema.index({ status: 1 });

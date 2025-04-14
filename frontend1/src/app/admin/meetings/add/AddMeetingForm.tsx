@@ -1,55 +1,87 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './add.module.css';
-import { meetingService } from '../../../../services/meetingService';
+import { meetingService, Meeting } from '../../../../services/meetingService';
 import { courseService } from '../../../../services/courseService';
 import { userService } from '../../../../services/userService';
+import { classService } from '../../../../services/classService';
 import { authService } from '../../../../services/authService';
 import { toast } from 'react-hot-toast';
 
 interface FormData {
-  date: string; // yyyy-MM-dd
-  time: string; // HH:mm
+  date: string;
+  time: string;
   duration: number;
   tutor: string;
   student: string[];
   course?: string;
   meetingLink?: string;
   notes?: string;
+  classId?: string;
+}
+
+interface Student {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+interface Course {
+  _id: string;
+  name: string;
 }
 
 export default function AddMeetingForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const classId = searchParams.get('classId');
 
   const [formData, setFormData] = useState<FormData>({
     date: '',
     time: '',
-    duration: 0,
+    duration: 60, // Default duration 60 minutes
     tutor: '',
     student: [],
     course: '',
     meetingLink: '',
-    notes: ''
+    notes: '',
+    classId: classId || ''
   });
 
   const [tutors, setTutors] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [classData, setClassData] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tutorsData, studentsData, coursesData] = await Promise.all([
-          userService.getTutors(),
-          userService.getStudents(),
-          courseService.getAllCourses()
-        ]);
-        setTutors(tutorsData);
-        setStudents(studentsData);
-        setCourses(coursesData);
+        if (classId) {
+          // If creating from class, fetch class data
+          const classDetails = await classService.getClassById(classId);
+          if (classDetails) {
+            setClassData(classDetails);
+            setFormData(prev => ({
+              ...prev,
+              tutor: classDetails.tutor._id,
+              course: classDetails.courses[0]?._id || '',
+              student: classDetails.students.map((s: any) => s._id)
+            }));
+          }
+        } else {
+          // If not creating from class, fetch all data
+          const [tutorsData, studentsData, coursesData] = await Promise.all([
+            userService.getTutors(),
+            userService.getStudents(),
+            courseService.getAllCourses()
+          ]);
+          setTutors(tutorsData);
+          setStudents(studentsData);
+          setCourses(coursesData);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load form data');
@@ -57,7 +89,7 @@ export default function AddMeetingForm() {
     };
 
     fetchData();
-  }, []);
+  }, [classId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -86,7 +118,7 @@ export default function AddMeetingForm() {
   
     const { date, time, duration, tutor, student, course, meetingLink, notes } = formData;
   
-    if (!date || !time || !tutor || student.length === 0) {
+    if (!date || !time || !classId) {
       toast.error('Please fill in all required fields');
       setLoading(false);
       return;
@@ -109,36 +141,41 @@ export default function AddMeetingForm() {
       const [hour, minute] = time.split(':');
       const timeObj = new Date(date);
       timeObj.setHours(parseInt(hour), parseInt(minute), 0, 0);
-  
-      const selectedTutor = tutors.find(t => t._id === tutor);
-      if (!selectedTutor) {
-        toast.error('Tutor not found');
+
+      // Get full student objects
+      const selectedStudents = students.filter(s => student.includes(s._id));
+      
+      // Get full course object
+      const selectedCourse = courses.find(c => c._id === course);
+      if (!selectedCourse && !classId) {
+        toast.error('Please select a course');
         setLoading(false);
         return;
       }
   
-      const selectedCourse = courses.find(c => c._id === course);
-  
-      const meetingData = {
+      const meetingData: Meeting = {
         date: dateObj,
-        time: timeObj,
+        time: time,
         duration: Number(duration),
-        // tutor: {
-        //   _id: selectedTutor._id,
-        //   fullName: selectedTutor.fullName,
-        // },
-        tutorId: selectedTutor._id, 
-        students: student,
-        // course: selectedCourse
-        //   ? { _id: selectedCourse._id, name: selectedCourse.name }
-        //   : undefined,
-        courseId: selectedCourse?._id,
+        tutorId: tutor,
+        students: selectedStudents.map(s => ({
+          _id: s._id,
+          fullName: s.fullName || s.email,
+          email: s.email
+        })),
+        courseId: {
+          _id: selectedCourse?._id || classData?.courses[0]?._id || '',
+          name: selectedCourse?.name || classData?.courses[0]?.name || ''
+        },
+        classId: classId,
         meetingLink: meetingLink || undefined,
         notes: notes || undefined,
-        status: 'scheduled' as 'scheduled'
+        status: 'scheduled'
       };
   
-      await meetingService.createMeeting(meetingData);
+      console.log('Meeting data being sent:', meetingData);
+      const result = await meetingService.createMeeting(meetingData);
+      console.log('Meeting creation result:', result);
       toast.success('Meeting created successfully');
       router.push('/admin/meetings');
     } catch (error) {
@@ -148,7 +185,6 @@ export default function AddMeetingForm() {
       setLoading(false);
     }
   };
-  
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -194,75 +230,86 @@ export default function AddMeetingForm() {
         </div>
       </div>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="tutor">Tutor</label>
-        <select
-          id="tutor"
-          name="tutor"
-          value={formData.tutor}
-          onChange={handleChange}
-          required
-          className={styles.select}
-        >
-          <option value="">Select Tutor</option>
-          {tutors.map(tutor => (
-            <option key={tutor._id} value={tutor._id}>
-              {tutor.fullName || tutor.email}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!classId ? (
+        <>
+          <div className={styles.formGroup}>
+            <label htmlFor="tutor">Tutor</label>
+            <select
+              id="tutor"
+              name="tutor"
+              value={formData.tutor}
+              onChange={handleChange}
+              required
+              className={styles.select}
+            >
+              <option value="">Select Tutor</option>
+              {tutors.map(tutor => (
+                <option key={tutor._id} value={tutor._id}>
+                  {tutor.fullName || tutor.email}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="student">Students</label>
-        <select
-          id="student"
-          name="student"
-          multiple
-          value={formData.student}
-          onChange={handleChange}
-          required
-          className={styles.select}
-          size={5}
-        >
-          {students.map(student => (
-            <option key={student._id} value={student._id}>
-              {student.fullName || student.email}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="student">Students</label>
+            <select
+              id="student"
+              name="student"
+              multiple
+              value={formData.student}
+              onChange={handleChange}
+              required
+              className={styles.select}
+              size={5}
+            >
+              {students.map(student => (
+                <option key={student._id} value={student._id}>
+                  {student.fullName || student.email}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="course">Course (Optional)</label>
-        <select
-          id="course"
-          name="course"
-          value={formData.course}
-          onChange={handleChange}
-          className={styles.select}
-        >
-          <option value="">Select Course</option>
-          {courses.map(course => (
-            <option key={course._id} value={course._id}>
-              {course.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className={styles.formGroup}>
-        <label htmlFor="meetingLink">Meeting Link (Optional)</label>
-        <input
-          type="url"
-          id="meetingLink"
-          name="meetingLink"
-          value={formData.meetingLink}
-          onChange={handleChange}
-          placeholder="https://meet.google.com/mfg-emui-yom"
-          className={styles.input}
-        />
-      </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="course">Course</label>
+            <select
+              id="course"
+              name="course"
+              value={formData.course}
+              onChange={handleChange}
+              required
+              className={styles.select}
+            >
+              <option value="">Select Course</option>
+              {courses.map(course => (
+                <option key={course._id} value={course._id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      ) : (
+        <div className={styles.classInfo}>
+          <div className={styles.infoRow}>
+            <label>Class:</label>
+            <span>{classData?.name}</span>
+          </div>
+          <div className={styles.infoRow}>
+            <label>Tutor:</label>
+            <span>{classData?.tutor.fullName}</span>
+          </div>
+          <div className={styles.infoRow}>
+            <label>Course:</label>
+            <span>{classData?.courses[0]?.name}</span>
+          </div>
+          <div className={styles.infoRow}>
+            <label>Students:</label>
+            <span>{classData?.students.map((s: any) => s.fullName).join(', ')}</span>
+          </div>
+        </div>
+      )}
 
       <div className={styles.formGroup}>
         <label htmlFor="notes">Notes (Optional)</label>
@@ -271,17 +318,12 @@ export default function AddMeetingForm() {
           name="notes"
           value={formData.notes}
           onChange={handleChange}
-          rows={3}
           className={styles.textarea}
         />
       </div>
 
       <div className={styles.formActions}>
-        <button
-          type="submit"
-          className={styles.submitButton}
-          disabled={loading}
-        >
+        <button type="submit" className={styles.submitButton} disabled={loading}>
           {loading ? 'Creating...' : 'Create Meeting'}
         </button>
       </div>

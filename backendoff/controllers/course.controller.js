@@ -61,7 +61,7 @@ exports.createCourse = async (req, res) => {
   exports.getCourses = async (req, res) => {
     try {
       const { name, category, level, description, startDate, enDate, search } = req.query;
-      // Tùy chỉnh filter nếu cần
+      //filter properties
       const filter = { name, category, level, description, startDate, enDate, search};
       const courses = await courseService.getCourses(filter);
       res.json(courses);
@@ -170,7 +170,7 @@ exports.bulkEnrollStudents = async (req, res) => {
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
-  };
+};
   
 
 exports.unenrollFromCourse = async (req, res) => {

@@ -41,60 +41,86 @@ const upload = multer({
 
 // Upload document
 exports.uploadDocument = async (req, res) => {
-  // Sử dụng multer để parse multipart/form-data
   upload(req, res, async function (err) {
-    // Log request body và file để debug
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({ message: 'File upload error: ' + err.message });
-    } else if (err) {
-      return res.status(400).json({ message: err.message });
-    }
-
-    const { studentId, courseId } = req.body;
-    if (!studentId || !courseId) {
-      return res.status(400).json({ message: 'studentId and courseId are required.' });
-    }
-
     try {
+      // Handle multer errors
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ 
+          message: err.code === 'LIMIT_FILE_SIZE' 
+            ? 'File size cannot exceed 5MB' 
+            : `File upload error: ${err.message}` 
+        });
+      } else if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+
+      // Check if file exists
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      // Get data from request
+      const { studentId, courseId, name } = req.body;
+      
+      // Validate required fields
+      if (!studentId || !courseId) {
+        // Clean up uploaded file
+        if (req.file.path) {
+          await fs.unlink(req.file.path);
+        }
+        return res.status(400).json({ message: 'studentId and courseId are required.' });
+      }
+
+      // Validate course enrollment
       const course = await Course.findOne({ _id: courseId, students: studentId });
       if (!course) {
-        //delete file if not valid
-        if (req.file && req.file.path) {
+        // Clean up uploaded file
+        if (req.file.path) {
           await fs.unlink(req.file.path);
         }
         return res.status(404).json({ message: 'Course not found or student not enrolled' });
       }
 
-      //create new document
+      // Create document record
       const document = new Document({
-        name: req.file.originalname,
+        name: name || req.file.originalname,
         courseId,
         studentId,
         filePath: req.file.path,
+        fileUrl: `/uploads/documents/${req.file.filename}`,
+        fileType: path.extname(req.file.originalname).toLowerCase().substring(1),
+        fileSize: req.file.size,
         submissionDate: new Date(),
-        status: 'submitted'
+        status: 'submitted',
+        uploadedBy: studentId
       });
 
       await document.save();
 
-      return res.status(200).json({
+      // Return success response
+      return res.status(201).json({
         message: 'Document uploaded successfully',
-        document: {
+        data: {
           id: document._id,
           name: document.name,
+          fileUrl: document.fileUrl,
           submissionDate: document.submissionDate,
-          status: document.status
+          status: document.status,
+          fileType: document.fileType,
+          fileSize: document.fileSize
         }
       });
+
     } catch (error) {
-      //if file error then delete file
+      // Clean up uploaded file on error
       if (req.file && req.file.path) {
         await fs.unlink(req.file.path);
       }
-      return res.status(500).json({ message: 'Error uploading document: ' + error.message });
+      console.error('Error uploading document:', error);
+      return res.status(500).json({ 
+        message: 'Error uploading document', 
+        error: error.message 
+      });
     }
   });
 };

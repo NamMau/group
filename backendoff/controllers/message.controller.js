@@ -2,11 +2,19 @@ const Message = require('../models/message.model');
 const { createNotification } = require('../services/notification.service');
 const messageService = require('../services/message.service');
 const { getIO } = require('../config/socket');
+const User = require('../models/user.model');
 
 exports.sendMessage = async (req, res) => {
   try {
     const { receiverId, content } = req.body;
     const senderId = req.user.id;
+
+    // Validate required fields
+    if (!content || !receiverId) {
+      return res.status(400).json({ 
+        message: "Both receiverId and content are required" 
+      });
+    }
 
     const message = await messageService.createMessage(senderId, receiverId, content);
 
@@ -19,6 +27,7 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json(message);
   } catch (error) {
+    console.error('Error sending message:', error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -81,5 +90,33 @@ exports.getMessageThreads = async (req, res) => {
     res.json(threads);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getMessagesByTutor = async (req, res) => {
+  try {
+    const { tutorId } = req.params;
+    const { limit = 5 } = req.query;
+
+    const messages = await messageService.getMessagesByTutor(tutorId, limit);
+
+    return res.status(200).json({
+      success: true,
+      data: messages.map(msg => ({
+        _id: msg._id,
+        content: msg.content,
+        sender: msg.sender,
+        receiver: msg.receiver,
+        createdAt: msg.createdAt,
+        isRead: msg.isRead
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error in getMessagesByTutor controller:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
   }
 };

@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className={styles.header}>
           <div className={styles.headerButtons}>
             <button className={styles.exportButton}>Export CSV</button>
-            {['/admin/teachers', '/admin/students', '/admin/classes', '/admin/course', '/admin/meetings'].includes(pathname) && (
+            {['/admin/teachers', '/admin/students', '/admin/classes', '/admin/course'].includes(pathname) && (
               <Link href={`${pathname}/add`}>
                 <button className={styles.addButton}>Add {pathname.split('/').pop()}</button>
               </Link>

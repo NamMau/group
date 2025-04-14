@@ -104,16 +104,15 @@ const CourseList = () => {
     );
   }
 
-  if (courses.length === 0) {
+  if (filteredCourses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
-        <p className="text-gray-500 text-lg mb-4">No courses available</p>
-        <button
-          onClick={fetchCourses}
-          className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-        >
-          Refresh Courses
-        </button>
+        <div className="text-gray-500 text-xl mb-4">No courses found</div>
+        <p className="text-gray-600 text-center mb-4">
+          {filter.status !== 'all' || filter.level !== 'all' || filter.category !== 'all'
+            ? "Try adjusting your filters"
+            : "You haven't enrolled in any courses yet"}
+        </p>
       </div>
     );
   }
@@ -158,27 +157,15 @@ const CourseList = () => {
       </div>
 
       {/* Course Grid */}
-      {filteredCourses.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 text-lg">No courses found matching your criteria</p>
-          <button
-            onClick={() => setFilter({ status: 'all', level: 'all', category: 'all' })}
-            className="mt-4 px-4 py-2 text-orange-500 hover:text-orange-600 transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map(course => (
-            <CourseCard
-              key={course._id}
-              course={course}
-              onViewCourse={handleViewCourse}
-            />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredCourses.map((course) => (
+          <CourseCard
+            key={course._id}
+            course={course}
+            onViewCourse={handleViewCourse}
+          />
+        ))}
+      </div>
     </div>
   );
 };

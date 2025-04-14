@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, FaDashcube } from "react-icons/fa";
+import { FaHome, FaBook, FaCalendarAlt, FaFileAlt, FaEnvelope, FaUser, FaCog, FaDashcube, FaVideo } from "react-icons/fa";
 
 const menuItems = [
   { name: "Dashboard", icon: <FaDashcube />, path: "/tutor/dashboard" },
   { name: "My Courses", icon: <FaBook />, path: "/tutor/courses" },
+  { name: "Meetings", icon: <FaVideo />, path: "/tutor/meetings" },
   { name: "Appointments", icon: <FaCalendarAlt />, path: "/tutor/appointment" },
   { name: "Documents", icon: <FaFileAlt />, path: "/tutor/documents" },
-  { name: "Messages", icon: <FaEnvelope />, path: "/tutor/messages" },
   { name: "Blog", icon: <FaUser />, path: "/tutor/blog" },
 ];
 

@@ -41,11 +41,6 @@ class AuthService {
         };
 
         const user = await User.create(userData);
-
-        // if (adminId && role === 'student') {
-        //     await User.findByIdAndUpdate(adminId, { $push: { students: user._id } });
-        // }
-
         const { accessToken, refreshToken } = this.generateTokens(user._id, user.role);
 
         // Save refresh token

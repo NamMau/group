@@ -96,7 +96,7 @@ export default function StudentsTable({ searchTerm = '' }: StudentsTableProps) {
   }
 
   const filteredStudents = students.filter((student) =>
-    student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

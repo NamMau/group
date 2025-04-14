@@ -1,6 +1,8 @@
 import { authService, API_URL } from './authService';
 import { userService } from './userService';
+import { chatService } from './chatService';
 import axios from 'axios';
+import { User } from './userService';
 
 export interface Course {
   _id: string;
@@ -48,17 +50,68 @@ class CourseService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${API_URL}/courses/tutor-dashboard/${tutorId}`, {
+      // First, get the tutor's courses
+      const coursesResponse = await axios.get(`${API_URL}/courses/coursebytutor/${tutorId}`, {
         headers: authService.getAuthHeaders(),
       });
 
-      if (response.data.data && Array.isArray(response.data.data.courses)) {
-        response.data.data.courses = this.convertCourseArrayDates(response.data.data.courses);
-      } else if (response.data.data) {
-        response.data.data = this.convertCourseDates(response.data.data);
+      if (!coursesResponse.data) {
+        throw new Error('No data received from server');
       }
 
-      return response.data.data;
+      const courses = Array.isArray(coursesResponse.data.data) 
+        ? this.convertCourseArrayDates(coursesResponse.data.data)
+        : [];
+
+      // Calculate total students from courses
+      const totalStudents = courses.reduce((total, course) => 
+        total + (Array.isArray(course.students) ? course.students.length : 0), 0);
+
+      // Get upcoming appointments (if available)
+      let upcomingAppointments = [];
+      try {
+        const appointmentsResponse = await axios.get(`${API_URL}/appointments/tutor/${tutorId}/upcoming`, {
+          headers: authService.getAuthHeaders(),
+        });
+        upcomingAppointments = appointmentsResponse.data.data || [];
+      } catch (error) {
+        console.warn('Could not fetch appointments:', error);
+      }
+
+      // Get recent messages using chatService
+      const recentMessages = await chatService.getMessagesByTutor(tutorId, 5);
+
+      // Return combined dashboard data
+      return {
+        totalStudents,
+        totalCourses: courses.length,
+        totalMessages: recentMessages.length,
+        upcomingAppointments,
+        recentMessages: recentMessages.map((msg: any) => ({
+          _id: msg?._id || '',
+          content: msg?.content || '',
+          sender: msg?.sender ? {
+            _id: msg.sender._id || '',
+            fullName: msg.sender.fullName || '',
+            email: msg.sender.email || ''
+          } : {
+            _id: '',
+            fullName: '',
+            email: ''
+          },
+          recipient: msg?.recipient ? {
+            _id: msg.recipient._id || '',
+            fullName: msg.recipient.fullName || '',
+            email: msg.recipient.email || ''
+          } : {
+            _id: '',
+            fullName: '',
+            email: ''
+          },
+          createdAt: msg?.createdAt ? new Date(msg.createdAt) : new Date()
+        })),
+        courses
+      };
     } catch (error) {
       console.error('Error getting tutor dashboard:', error);
       throw error;
@@ -230,6 +283,85 @@ class CourseService {
     } catch (error) {
       console.error('Error in deleteCourse:', error);
       throw error;
+    }
+  }
+
+  async getStudentDetails(studentIds: string[]): Promise<User[]> {
+    try {
+      const uniqueIds = Array.from(new Set(studentIds));
+      const promises = uniqueIds.map(id => 
+        fetch(`${API_URL}/users/${id}`, {
+          headers: authService.getAuthHeaders(),
+        }).then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch student with ID ${id}`);
+          }
+          return response.json();
+        })
+      );
+
+      const responses = await Promise.all(promises);
+      return responses.map(data => data.data || data);
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      throw error;
+    }
+  }
+
+  async getStudentDashboard(studentId: string): Promise<any> {
+    try {
+      // First get enrolled courses
+      const coursesResponse = await fetch(`${API_URL}/courses/${studentId}/courses`, {
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!coursesResponse.ok) {
+        if (coursesResponse.status === 401) {
+          authService.removeToken();
+          throw new Error('Authentication required');
+        }
+        throw new Error('Failed to fetch enrolled courses');
+      }
+
+      const coursesData = await coursesResponse.json();
+      const courses = Array.isArray(coursesData.data) ? coursesData.data : [];
+
+      // Get study time data
+      const studyTimeData = await this.getStudyTime(studentId);
+
+      // Calculate course progress (temporary random values)
+      const enrolledCourses = courses.map((course: any) => ({
+        ...course,
+        progress: course.progress || Math.floor(Math.random() * 100)
+      }));
+
+      return {
+        student: await userService.getUser(studentId),
+        studyTime: studyTimeData,
+        enrolledCourses,
+        upcomingClasses: [], // To be implemented if needed
+        recentMessages: []   // To be implemented if needed
+      };
+    } catch (error) {
+      console.error('Error getting student dashboard:', error);
+      throw error;
+    }
+  }
+
+  private async getStudyTime(studentId: string): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_URL}/users/students/${studentId}/study-time`, {
+        headers: authService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting study time:', error);
+      return [];
     }
   }
 }
